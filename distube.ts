@@ -14,6 +14,8 @@ export function initializeDisTube(client: ExtendedClient) {
         ]
     });
 
+    client.distube.setMaxListeners(20); // イベントリスナーの最大数を増やす
+
     const status = (queue: any) =>
         `音量: \`${queue.volume}%\` |  フィルタ: \`${queue.filters.names.join(', ') || '非アクティブ'}\` | リピート: \`${queue.repeatMode ? (queue.repeatMode === 2 ? 'キュー' : 'トラック') : 'オフ'}\` | 自動再生: \`${queue.autoplay ? 'オン' : 'オフ'}\``;
 
