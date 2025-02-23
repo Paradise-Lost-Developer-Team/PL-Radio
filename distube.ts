@@ -10,18 +10,42 @@ export function initializeDisTube(client: ExtendedClient) {
         plugins: [
             new SpotifyPlugin(),
             new SoundCloudPlugin(),
-            new YtDlpPlugin(), // カンマを追加
+            new YtDlpPlugin(),
         ],
+        customFilters: {
+            "8D": "apulsator=hz=0.08",
+            "gate": "agate",
+            "haas": "haas",
+            "reverse": "areverse",
+            "flanger": "flanger",
+            "subboost": "asubboost",
+            "vaporwave": "aresample=48000,asetrate=48000*0.8",
+            "nightcore": "aresample=48000,asetrate=48000*1.25",
+            "phaser": "aphaser",
+            "tremolo": "tremolo",
+            "vibrato": "vibrato=f=6.5",
+            "treble": "treble=g=5",
+            "normalizer": "dynaudnorm=f=200",
+            "surrounding": "surround",
+            "pulsator": "apulsator=hz=1",
+            "subboost": "asubboost",
+            "karaoke": "stereotools=mlev=0.03",
+            "haas": "haas",
+            "mcompand": "mcompand"
+        },
         emitNewSongOnly: true,
-        leaveOnFinish: true,
-        leaveOnStop: true,
         savePreviousSongs: true,
         nsfw: true,
-        emptyCooldown: 25,
-        ytdlOptions: {
-            quality: 'highestaudio',
-            highWaterMark: 1 << 27, // バッファサイズを増やす
-            dlChunkSize: 64 * 1024, // 分割ダウンロードを有効にする
+        emitAddListWhenCreatingQueue: false,
+        emitAddSongWhenCreatingQueue: false,
+        joinNewVoiceChannel: true,
+        ffmpeg: {
+            args: [
+                '-vn',
+                '-b:a', '128k',
+                '-ar', '44100',
+                '-f', 'wav',
+            ],
         },
     });
 
