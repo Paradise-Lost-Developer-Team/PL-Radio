@@ -94,76 +94,146 @@ module.exports = {
                     }
                     switch (option) {
                         case 'skip':
-                            await queue.skip(voiceChannel);
-                            embed
-                                .setColor('Blue')
-                                .setDescription('曲をスキップしました');
-                            return await interaction.reply({ embeds: [embed] });
+                            try {
+                                await queue.skip(voiceChannel);
+                                embed
+                                    .setColor('Blue')
+                                    .setDescription('曲をスキップしました');
+                                await interaction.reply({ embeds: [embed] });
+                            } catch (error) {
+                                console.error(error);
+                                embed
+                                    .setColor('Red')
+                                    .setDescription('曲をスキップできませんでした');
+                                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                            }
+                            break;
                         case 'stop':
-                            await queue.stop(voiceChannel);
-                            embed
-                                .setColor('Blue')
-                                .setDescription('再生を停止しました');
-                            return await interaction.reply({ embeds: [embed] });
+                            try {
+                                await queue.stop(voiceChannel);
+                                embed
+                                    .setColor('Blue')
+                                    .setDescription('再生を停止しました');
+                                await interaction.reply({ embeds: [embed] });
+                            } catch (error) {
+                                console.error(error);
+                                embed
+                                    .setColor('Red')
+                                    .setDescription('再生を停止できませんでした');
+                                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                            }
+                            break;
                         case 'pause':
-                            await queue.pause(voiceChannel);
-                            embed
-                                .setColor('Blue')
-                                .setDescription('曲を一時停止しました');
-                            return await interaction.reply({ embeds: [embed] });
+                            try {
+                                await queue.pause(voiceChannel);
+                                embed
+                                    .setColor('Blue')
+                                    .setDescription('曲を一時停止しました');
+                                await interaction.reply({ embeds: [embed] });
+                            } catch (error) {
+                                console.error(error);
+                                embed
+                                    .setColor('Red')
+                                    .setDescription('曲を一時停止できませんでした');
+                                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                            }
+                            break;
                         case 'resume':
-                            await queue.resume(voiceChannel);
-                            embed
-                                .setColor('Blue')
-                                .setDescription('曲を再開しました');
-                            return await interaction.reply({ embeds: [embed] });
+                            try {
+                                await queue.resume(voiceChannel);
+                                embed
+                                    .setColor('Blue')
+                                    .setDescription('曲を再開しました');
+                                await interaction.reply({ embeds: [embed] });
+                            } catch (error) {
+                                console.error(error);
+                                embed
+                                    .setColor('Red')
+                                    .setDescription('曲を再開できませんでした');
+                                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                            }
+                            break;
                         case 'queue':
-                            embed
-                                .setColor('Blue')
-                                .setDescription(`キュー: ${queue.songs.map((song: any, id: number) => `**${id + 1}**. [${song.name}](${song.url}) - \`${song.formattedDuration}\``).join('\n')}`);
-                            return await interaction.reply({ embeds: [embed] });
+                            try {
+                                embed
+                                    .setColor('Blue')
+                                    .setDescription(`キュー: ${queue.songs.map((song: any, id: number) => `**${id + 1}**. [${song.name}](${song.url}) - \`${song.formattedDuration}\``).join('\n')}`);
+                                await interaction.reply({ embeds: [embed] });
+                            } catch (error) {
+                                console.error(error);
+                                embed
+                                    .setColor('Red')
+                                    .setDescription('キューを表示できませんでした');
+                                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                            }
+                            break;
                         case 'loop-queue':
-                            if (queue.repeatMode === 2) {
-                                await client.distube.setRepeatMode(interaction, 0);
+                            try {
+                                if (queue.repeatMode === 2) {
+                                    await client.distube.setRepeatMode(interaction, 0);
+                                    embed
+                                        .setColor('Blue')
+                                        .setDescription('トラックはスキップされます');
+                                } else {
+                                    await client.distube.setRepeatMode(interaction, 2);
+                                    embed
+                                        .setColor('Blue')
+                                        .setDescription(`\`🔂\` | トラックはループモードです:** \`1曲\``);
+                                }
+                                await interaction.reply({ embeds: [embed] });
+                            } catch (error) {
+                                console.error(error);
                                 embed
-                                    .setColor('Blue')
-                                    .setDescription('トラックはスキップされます');
-                                return await interaction.reply({ embeds: [embed] });
-                            } else {
-                                await client.distube.setRepeatMode(interaction, 2);
-                                embed
-                                    .setColor('Blue')
-                                    .setDescription(`\`🔂\` | トラックはループモードです:** \`1曲\``);
-                                return await interaction.reply({ embeds: [embed] });
+                                    .setColor('Red')
+                                    .setDescription('ループモードを設定できませんでした');
+                                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                             }
+                            break;
                         case 'loop-all':
-                            if (queue.repeatMode === 0) {
-                                await client.distube.setRepeatMode(interaction, 1);
+                            try {
+                                if (queue.repeatMode === 0) {
+                                    await client.distube.setRepeatMode(interaction, 1);
+                                    embed
+                                        .setColor('Blue')
+                                        .setDescription(`\`🔁\` | トラックはループモードです:** \`全て\``);
+                                } else {
+                                    await client.distube.setRepeatMode(interaction, 0);
+                                    embed
+                                        .setColor('Blue')
+                                        .setDescription(`\`🔁\` | トラックはループモードではありません:** \`全て\``);
+                                }
+                                await interaction.reply({ embeds: [embed] });
+                            } catch (error) {
+                                console.error(error);
                                 embed
-                                    .setColor('Blue')
-                                    .setDescription(`\`🔁\` | トラックはループモードです:** \`全て\``);
-                                return await interaction.reply({ embeds: [embed] });
-                            } else {
-                                await client.distube.setRepeatMode(interaction, 0);
-                                embed
-                                    .setColor('Blue')
-                                    .setDescription(`\`🔁\` | トラックはループモードではありません:** \`全て\``);
-                                return await interaction.reply({ embeds: [embed] });
+                                    .setColor('Red')
+                                    .setDescription('ループモードを設定できませんでした');
+                                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                             }
+                            break;
                         case 'autoplay':
-                            if (!queue.autoplay) {
-                                await client.distube.toggleAutoplay(interaction);
+                            try {
+                                if (!queue.autoplay) {
+                                    await client.distube.toggleAutoplay(interaction);
+                                    embed
+                                        .setColor('Blue')
+                                        .setDescription(`📻 *自動再生は:*\`アクティブ\``);
+                                } else {
+                                    await client.distube.toggleAutoplay(interaction);
+                                    embed
+                                        .setColor('Blue')
+                                        .setDescription(`📻 *自動再生は:*\`非アクティブ\``);
+                                }
+                                await interaction.reply({ embeds: [embed] });
+                            } catch (error) {
+                                console.error(error);
                                 embed
-                                    .setColor('Blue')
-                                    .setDescription(`📻 *自動再生は:*\`アクティブ\``);
-                                return await interaction.reply({ embeds: [embed] });
-                            } else {
-                                await client.distube.toggleAutoplay(interaction);
-                                embed
-                                    .setColor('Blue')
-                                    .setDescription(`📻 *自動再生は:*\`非アクティブ\``);
-                                return await interaction.reply({ embeds: [embed] });
+                                    .setColor('Red')
+                                    .setDescription('自動再生を切り替えできませんでした');
+                                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                             }
+                            break;
+                    }
                     }
             }
         } catch (error) {
