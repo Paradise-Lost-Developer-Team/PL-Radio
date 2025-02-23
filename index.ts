@@ -1,18 +1,12 @@
-// Add global error handlers at the top:
-process.on('uncaughtException', error => {
-    console.error('Uncaught Exception:', error);
-});
-process.on('unhandledRejection', error => {
-    console.error('Unhandled Rejection:', error);
-});
-
-import { Client, Events, GatewayIntentBits, ActivityType, MessageFlags, Collection } from "discord.js";
+import { Client, Events, ActivityType, MessageFlags, Collection } from "discord.js";
 import { deployCommands } from "./deploy-commands";
 import { Player } from "discord-player";
 import { REST } from "@discordjs/rest";
+import { Routes } from "discord-api-types/v9";
 import { TOKEN } from "./config.json";
 import { ServerStatus } from "./dictionaries";
-import { SpotifyExtractor } from '@discord-player/extractor';  // 追加
+import fs from "node:fs";
+import path from "node:path";
 
 interface ExtendedClient extends Client {
     player: Player;
@@ -21,35 +15,24 @@ interface ExtendedClient extends Client {
 
 export const client = new Client({
     intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildVoiceStates,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ], 
+        Intents.FLAGS.GUILDS,
+        Intents.FLAGS.GUILD_MESSAGES,
+        Intents.FLAGS.GUILD_VOICE_STATES
+    ],
 }) as ExtendedClient; 
+
 client.commands = new Collection();
 
 const rest = new REST({ version: '9' }).setToken(TOKEN);
 
-client.player = new Player(client);
-
-// 追加: "playerError" イベントリスナーを登録
-(client.player as any).on("playerError", (queue: any, error: Error) => {
-    console.error(`Player error (playerError event) in guild ${queue.guild.id}: ${error.message}`);
+client.player = new Player(client, {
+    ytdlOptions: {
+        quality: 'highestaudio',
+        highWaterMark: 1 << 25
+    }
 });
-
-// 追加: プレイヤーエラーイベントのリスナーを登録
-client.player.on("error", (error: Error) => {
-    console.error(`Player error: ${error.message}`);
-});
-
-// Remove or comment out this line:
-// client.player.extractors.register(SpotifyExtractor, {});
 
 client.once(Events.ClientReady, async () => {
-    // 追加: Extractorsの非同期登録
-    await client.player.extractors.register(SpotifyExtractor, {});
-
     console.log("起動完了");
     await deployCommands();
     client.user!.setActivity("起動中…", { type: ActivityType.Playing });

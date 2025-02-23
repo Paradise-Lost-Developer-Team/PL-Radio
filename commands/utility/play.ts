@@ -1,120 +1,122 @@
-import { SlashCommandBuilder } from "@discordjs/builders";
-import { QueryType, SearchResult, Player, Track, PlayOptions, PlayerNodeInitializerOptions } from "discord-player";
-import { Client, ChatInputCommandInteraction, MessageFlags, GuildMember, GuildVoiceChannelResolvable, TextBasedChannel } from "discord.js";
-import { client } from "../../index";
-
-const player = new Player(client, {});
+import { SlashCommandBuilder } from '@discordjs/builders';
+import { MessageEmbed, MessageFlags } from 'discord.js';
+import { QueryType } from 'discord-player';
 
 module.exports = {
     data: new SlashCommandBuilder()
-      .setName("play")
-      .setDescription("音楽を再生します")
-      .addStringOption((option) =>
-        option.setName("url").setDescription("YouTube URL").setRequired(true)
-      ),
-    async execute(client: Client, interaction: ChatInputCommandInteraction) {
-        if (!interaction.guild) {
-            return await interaction.reply({
-                content: "このコマンドはサーバー内でのみ使用できます",
-                flags: MessageFlags.Ephemeral,
-            });
+        .setName('play')
+        .setDescription('音楽を再生します')
+        .addSubcommand(Subcommand => {
+            Subcommand
+                .setName('search')
+                .setDescription('音楽を検索して再生します')
+                .addStringOption(option => {
+                    option
+                        .setName('searchterms')
+                        .setDescription('検索キーワード')
+                        .setRequired(true);
+                })
+        })
+        .addSubcommand(Subcommand => {
+            Subcommand
+                .setName('playlist')
+                .setDescription('プレイリストから再生します')
+                .addStringOption(option => {
+                    option
+                        .setName('url')
+                        .setDescription('再生するプレイリストのURL')
+                        .setRequired(true);
+                })
+        })
+        .addSubcommand(Subcommand => {
+            Subcommand
+                .setName('song')
+                .setDescription('曲を再生します')
+                .addStringOption(option => {
+                    option
+                        .setName('url')
+                        .setDescription('再生する曲のURL')
+                        .setRequired(true);
+                })
+        }),
+    execute: async ({client, interaction}) => {
+        if (!interaction.member.voice.channel) {
+            await interaction.reply({ content: 'ボイスチャンネルに接続してください。', flags: MessageFlags.Ephemeral });
+            return;
         }
-    
-        if (interaction.member) {
-            const member = await interaction.guild.members.fetch(interaction.member.user.id);
-            // ... rest of your code
-        } else {
-            // handle the case where interaction.member is null
-            console.error("interaction.member is null");
-            return await interaction.reply({
-                content: "エラーが発生しました",
-                flags: MessageFlags.Ephemeral,
+            
+        const queue = await client.player.createQueue(interaction.guild)
+
+        if (!queue.connection) await queue.connect(interaction.member.voice.channel)
+            
+        let embed = new MessageEmbed()
+        if(interaction.options.getSubcommand() === 'song') {
+
+            let url = interaction.options.getString('url');
+
+            const result = await client.player.search(url, {
+                requestedBy: interaction.user,
+                searchEngine: QueryType.YOUTUBE_VIDEO
             });
-        }
 
-        // キューを生成
-        const queue = player.queues.create(interaction.guild.id, {
-            metadata: {
-              channel: interaction.channel,
-            },
-          });
+            if (result.tracks.length === 0) {
+                await interaction.reply({ content: '曲を検索できませんでした', flags: MessageFlags.Ephemeral });
+                return
+            }
 
-          if (!queue) {
-            return await interaction.reply({
-                content: "音楽が再生されていません",
-                flags: MessageFlags.Ephemeral,
+            const song = result.tracks[0]
+            await queue.addTrack(song);
+
+            embed
+                .setDescription(`キューへ**[${song.title}](${song.url}** 追加されました。`))
+                .setThumbnail(song.thumbnail)
+                .setFooter({ text: `再生時間: ${song.duration}` })
+        } else if (interaction.options.getSubcommand() === 'playlist') {
+                
+            let url = interaction.options.getString('url');
+
+            const result = await client.player.search(url, {
+                requestedBy: interaction.user,
+                searchEngine: QueryType.YOUTUBE_PLAYLIST
             });
-        }
 
-        let member: GuildMember | null = null;
+            if (result.tracks.length === 0) {
+                await interaction.reply({ content: 'プレイリストを検索できませんでした', flags: MessageFlags.Ephemeral });
+                return
+            }
 
-        if (interaction.member) {
-            member = await interaction.guild.members.fetch(interaction.member.user.id);
-        } else {
-            console.error("interaction.member is null");
-            return await interaction.reply({
-                content: "エラーが発生しました",
-                flags: MessageFlags.Ephemeral,
+            const playlist = result.playlist;
+            await queue.addTracks(playlist);
+
+            embed
+                .setDescription(`キューに**${result.tracks.length}**曲追加されました。`)
+                .setThumbnail(result.tracks[0].thumbnail)
+                .setFooter({ text: `再生時間: ${playlist.duration}` })
+        } else if (interaction.options.getSubcommand() === 'search') {
+
+            let url = interaction.options.getString('searchterms');
+
+            const result = await client.player.search(url, {
+                requestedBy: interaction.user,
+                searchEngine: QueryType.AUTO,
             });
-        }
+            if (result.tracks.length === 0) {
+                await interaction.reply({ content: '曲を検索できませんでした', flags: MessageFlags.Ephemeral });
+                return
+            }
+                
+            const song = result.tracks[0]
+            await queue.addTracks(song);
 
-        if (client.user && interaction.guild.members.cache.get(client.user.id)?.voice?.channelId && member instanceof GuildMember && member.voice.channelId !== interaction.guild.members.cache.get(client.user.id)?.voice?.channelId) {
-            return await interaction.reply({
-                content: "botと同じボイスチャンネルに参加してください",
-                flags: MessageFlags.Ephemeral,
-            });
+            embed
+                .setDescription(`キューへ**[${song.title}](${song.url}** 追加されました。`)
+                .setThumbnail(song.thumbnail)
+                .setFooter({ text: `再生時間: ${song.duration}` })
         }
         
-        if (member instanceof GuildMember && !member.voice.channelId) {
-            return await interaction.reply({
-                content: "ボイスチャンネルに参加してください",
-                flags: MessageFlags.Ephemeral,
-            });
-        }
-        
-        if (interaction.member instanceof GuildMember && interaction.member.voice.channel) {
-            await queue.connect(interaction.member.voice.channel);
-        } else {
-            (queue as unknown as Player).destroy();
-            return await interaction.reply({
-                content: "ボイスチャンネルに参加できませんでした",
-                flags: MessageFlags.Ephemeral,
-            });
-        }
-
-    await interaction.deferReply();
-
-    const url = interaction.options.getString("url");
-    // 入力されたURLからトラックを取得
-    const track = await (client as any).player
-    .search(url, {
-        requestedBy: interaction.user,
-        searchEngine: QueryType.YOUTUBE_VIDEO,
-    })
-    .then((x: SearchResult) => {
-        const track = x.tracks[0];
-        return track;
-    });
-
-    if (!track) {
-        return await interaction.followUp({
-            content: "動画が見つかりませんでした",
+        if (!queue.playing) await queue.play();
+           await interaction.reply({ 
+            embeds: [embed] 
         });
     }
-    
-    // キューにトラックを追加
-    await queue.addTrack(track);
-
-    if (interaction.channel) {
-        const playOptions: PlayerNodeInitializerOptions<{ channel: TextBasedChannel | null; }> = {
-            nodeOptions: {},
-        };
-        
-        queue.play(track, playOptions);
-    }
-    
-    return await interaction.followUp({
-        content: `音楽をキューに追加しました **${track.title}**`,
-    });
-    },
-};
+}
