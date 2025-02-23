@@ -52,17 +52,37 @@ export async function stopMusic(interaction: CommandInteraction) {
     await interaction.reply({ content: "音楽を停止しました、そしてキューから全ての音楽を削除しました。", flags: MessageFlags.Ephemeral });
 }
 
-export async function playNext(interaction: CommandInteraction, channel: any) {
+async function playNext(interaction: CommandInteraction, channel: any) {
     if (queue.length === 0) return;
     const url = queue[0];
+
     const stream = await play.stream(url);
     const resource = createAudioResource(stream.stream, { inputType: stream.type });
+
     currentConnection = joinVoiceChannel({
         channelId: channel.id,
         guildId: channel.guild.id,
-        adapterCreator: channel.guild.voiceAdapterCreator as any
-    })
+        adapterCreator: channel.guild.voiceAdapterCreator as any,
+    });
+
     player.play(resource);
     currentConnection.subscribe(player);
-    await interaction.reply({ content: `次の音楽を再生中: ${url}` });
+
+    if (interaction.replied || interaction.deferred) {
+        // すでに返信されている場合は、新しいメッセージを送る
+        await interaction.followUp(`Now playing: ${url}`);
+    } else {
+        await interaction.reply(`Now playing: ${url}`);
+    }
+
+    player.once(AudioPlayerStatus.Idle, async () => {
+        queue.shift();
+        if (queue.length > 0) {
+            await playNext(interaction, channel);
+        } else {
+            await interaction.followUp('Queue is empty. Leaving the voice channel.');
+            currentConnection?.destroy();
+            currentConnection = null;
+        }
+    });
 }
