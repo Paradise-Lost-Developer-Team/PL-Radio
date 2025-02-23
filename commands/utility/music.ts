@@ -234,7 +234,6 @@ module.exports = {
                             }
                             break;
                     }
-                    }
             }
         } catch (error) {
             console.error(error);
