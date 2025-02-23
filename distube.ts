@@ -11,7 +11,18 @@ export function initializeDisTube(client: ExtendedClient) {
             new SpotifyPlugin(),
             new SoundCloudPlugin(),
             new YtDlpPlugin(), // カンマを追加
-        ]
+        ],
+        emitNewSongOnly: true,
+        leaveOnFinish: true,
+        leaveOnStop: true,
+        savePreviousSongs: true,
+        nsfw: true,
+        emptyCooldown: 25,
+        ytdlOptions: {
+            quality: 'highestaudio',
+            highWaterMark: 1 << 27, // バッファサイズを増やす
+            dlChunkSize: 64 * 1024, // 分割ダウンロードを有効にする
+        },
     });
 
     client.distube.setMaxListeners(20); // イベントリスナーの最大数を増やす
