@@ -1,247 +1,113 @@
-import { SlashCommandBuilder } from '@discordjs/builders';
-import { EmbedBuilder, PermissionFlagsBits, VoiceChannel, GuildEmoji, MessageFlags, ChatInputCommandInteraction } from 'discord.js';
-import { ExtendedClient } from '../../index';
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { useQueue } from 'discord-player';
+import { DisTube } from 'distube';
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('music')
-        .setDescription('音楽システム')
+        .setDescription('音楽を再生・停止・スキップなど')
         .addSubcommand(subcommand =>
             subcommand
                 .setName('play')
-                .setDescription('音楽を再生します')
-                .addStringOption(option =>
-                    option
-                        .setName('query')
-                        .setDescription('再生する曲の名前またはURLを指定してください')
-                        .setRequired(true)
-                )
-        )
+                .setDescription('音楽を再生')
+                .addStringOption(option => option.setName('query').setDescription('曲名またはURL').setRequired(true)))
         .addSubcommand(subcommand =>
             subcommand
                 .setName('volume')
-                .setDescription('音楽の音量を調整します')
-                .addNumberOption(option =>
-                    option
-                        .setName('percentage')
-                        .setDescription('音量を設定します、10 = 10%')
-                        .setMinValue(0)
-                        .setMaxValue(100)
-                        .setRequired(true)
-                )
-        )
+                .setDescription('音量を設定')
+                .addIntegerOption(option => option.setName('percentage').setDescription('10-100').setRequired(true)))
         .addSubcommand(subcommand =>
             subcommand
-                .setName('options')
-                .setDescription('音楽システムのオプション')
-                .addStringOption(option =>
-                    option
-                        .setName('option')
-                        .setDescription('オプションを指定してください')
-                        .setRequired(true)
-                        .addChoices(
-                            { name: 'queue', value: 'queue' },
-                            { name: 'skip', value: 'skip' },
-                            { name: 'pause', value: 'pause' },
-                            { name: 'resume', value: 'resume' },
-                            { name: 'stop', value: 'stop' },
-                            { name: 'loop-queue', value: 'loop-queue' },
-                            { name: 'loop-all', value: 'loop-all' },
-                            { name: 'autoplay', value: 'autoplay' },
-                        )
-                )
-        ),
-    async execute(interaction: ChatInputCommandInteraction) {
-        const { options, member, guild, channel } = interaction;
-        const client = interaction.client as ExtendedClient;
+                .setName('skip')
+                .setDescription('曲をスキップ'))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('stop')
+                .setDescription('音楽を停止'))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('pause')
+                .setDescription('音楽を一時停止'))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('resume')
+                .setDescription('音楽を再開')),
+    async execute(interaction: any) {
+        const { client, guild, member, options, channel } = interaction;
 
-        const subcommand = options.getSubcommand();
-        const query = options.getString('query');
-        const percentage = options.getNumber('percentage');
-        const option = options.getString('option');
+        if (!member) {
+            return interaction.reply({ content: 'ボイスチャンネルに参加してからコマンドを実行してください。', ephemeral: true });
+        }
+
         const voiceChannel = member.voice.channel;
 
-        const embed = new EmbedBuilder();
-
         if (!voiceChannel) {
-            embed
-                .setColor('Red')
-                .setDescription('ボイスチャンネルに参加してください');
-            return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: 'ボイスチャンネルに参加してからコマンドを実行してください。', ephemeral: true });
         }
-        if (!member.voice.channelId == guild.members.me.voice.channelId) {
-            embed
-                .setColor('Red')
-                .setDescription(`音楽システムは既に <#${guild.members.me.voice.channelId}> でアクティブなので使用できません`);
-            return await interaction.reply({ embeds: [embed] });
-        }
-        try {
-            switch (subcommand) {
-                case 'play':
-                    client.distube.play(voiceChannel, query, { textChannel: channel, member: member });
-                    return interaction.reply({ content: 'リクエストを受け付けました' });
-                case 'volume':
-                    client.distube.setVolume(voiceChannel, percentage);
-                    return interaction.reply({ content: `音量レベルが ${percentage}% に設定されました` });
-                case 'options':
-                    const queue = await client.distube.getQueue(voiceChannel);
 
-                    if (!queue) {
-                        embed
-                            .setColor('Red')
-                            .setDescription('キューがアクティブではありません');
-                        return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-                    }
-                    switch (option) {
-                        case 'skip':
-                            try {
-                                await queue.skip(voiceChannel);
-                                embed
-                                    .setColor('Blue')
-                                    .setDescription('曲をスキップしました');
-                                await interaction.reply({ embeds: [embed] });
-                            } catch (error) {
-                                console.error(error);
-                                embed
-                                    .setColor('Red')
-                                    .setDescription('曲をスキップできませんでした');
-                                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-                            }
-                            break;
-                        case 'stop':
-                            try {
-                                await queue.stop(voiceChannel);
-                                embed
-                                    .setColor('Blue')
-                                    .setDescription('再生を停止しました');
-                                await interaction.reply({ embeds: [embed] });
-                            } catch (error) {
-                                console.error(error);
-                                embed
-                                    .setColor('Red')
-                                    .setDescription('再生を停止できませんでした');
-                                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-                            }
-                            break;
-                        case 'pause':
-                            try {
-                                await queue.pause(voiceChannel);
-                                embed
-                                    .setColor('Blue')
-                                    .setDescription('曲を一時停止しました');
-                                await interaction.reply({ embeds: [embed] });
-                            } catch (error) {
-                                console.error(error);
-                                embed
-                                    .setColor('Red')
-                                    .setDescription('曲を一時停止できませんでした');
-                                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-                            }
-                            break;
-                        case 'resume':
-                            try {
-                                await queue.resume(voiceChannel);
-                                embed
-                                    .setColor('Blue')
-                                    .setDescription('曲を再開しました');
-                                await interaction.reply({ embeds: [embed] });
-                            } catch (error) {
-                                console.error(error);
-                                embed
-                                    .setColor('Red')
-                                    .setDescription('曲を再開できませんでした');
-                                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-                            }
-                            break;
-                        case 'queue':
-                            try {
-                                embed
-                                    .setColor('Blue')
-                                    .setDescription(`キュー: ${queue.songs.map((song: any, id: number) => `**${id + 1}**. [${song.name}](${song.url}) - \`${song.formattedDuration}\``).join('\n')}`);
-                                await interaction.reply({ embeds: [embed] });
-                            } catch (error) {
-                                console.error(error);
-                                embed
-                                    .setColor('Red')
-                                    .setDescription('キューを表示できませんでした');
-                                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-                            }
-                            break;
-                        case 'loop-queue':
-                            try {
-                                if (queue.repeatMode === 2) {
-                                    await client.distube.setRepeatMode(interaction, 0);
-                                    embed
-                                        .setColor('Blue')
-                                        .setDescription('トラックはスキップされます');
-                                } else {
-                                    await client.distube.setRepeatMode(interaction, 2);
-                                    embed
-                                        .setColor('Blue')
-                                        .setDescription(`\`🔂\` | トラックはループモードです:** \`1曲\``);
-                                }
-                                await interaction.reply({ embeds: [embed] });
-                            } catch (error) {
-                                console.error(error);
-                                embed
-                                    .setColor('Red')
-                                    .setDescription('ループモードを設定できませんでした');
-                                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-                            }
-                            break;
-                        case 'loop-all':
-                            try {
-                                if (queue.repeatMode === 0) {
-                                    await client.distube.setRepeatMode(interaction, 1);
-                                    embed
-                                        .setColor('Blue')
-                                        .setDescription(`\`🔁\` | トラックはループモードです:** \`全て\``);
-                                } else {
-                                    await client.distube.setRepeatMode(interaction, 0);
-                                    embed
-                                        .setColor('Blue')
-                                        .setDescription(`\`🔁\` | トラックはループモードではありません:** \`全て\``);
-                                }
-                                await interaction.reply({ embeds: [embed] });
-                            } catch (error) {
-                                console.error(error);
-                                embed
-                                    .setColor('Red')
-                                    .setDescription('ループモードを設定できませんでした');
-                                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-                            }
-                            break;
-                        case 'autoplay':
-                            try {
-                                if (!queue.autoplay) {
-                                    await client.distube.toggleAutoplay(interaction);
-                                    embed
-                                        .setColor('Blue')
-                                        .setDescription(`📻 *自動再生は:*\`アクティブ\``);
-                                } else {
-                                    await client.distube.toggleAutoplay(interaction);
-                                    embed
-                                        .setColor('Blue')
-                                        .setDescription(`📻 *自動再生は:*\`非アクティブ\``);
-                                }
-                                await interaction.reply({ embeds: [embed] });
-                            } catch (error) {
-                                console.error(error);
-                                embed
-                                    .setColor('Red')
-                                    .setDescription('自動再生を切り替えできませんでした');
-                                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-                            }
-                            break;
-                    }
+        if (!guild) {
+            return interaction.reply({ content: 'サーバーが見つかりませんでした。', ephemeral: true });
+        }
+
+        if (guild.members.me === null || guild.members.me.voice === null) {
+            return interaction.reply({ content: 'Botがサーバーに参加していません。', ephemeral: true });
+        }
+
+        if (member.voice === null || !member.voice.channelId) {
+            return interaction.reply({ content: 'ボイスチャンネルに参加してください。', ephemeral: true });
+        }
+
+        if (guild.members.me.voice.channelId && member.voice.channelId !== guild.members.me.voice.channelId) {
+            return interaction.reply({
+                embeds: [new EmbedBuilder()
+                    .setColor("Red")
+                    .setDescription(`音楽システムは既に <#${guild.members.me.voice.channelId}> でアクティブなので使用できません`)]
+            });
+        }
+
+        const query = options.getString("query");
+        const percentage = options.getInteger("percentage");
+
+        try {
+            switch (options.getSubcommand()) {
+                case "play":
+                    if (!query) return interaction.reply("曲名を入力してください");
+                    await interaction.deferReply();
+                    client.distube.play(voiceChannel, query, { textChannel: channel, member: member });
+                    return interaction.editReply({ content: `リクエストを受け付けました: ${query}` });
+                case "volume":
+                    if (!percentage) return interaction.reply("10-100の数値を入力してください");
+                    await interaction.deferReply();
+                    client.distube.setVolume(voiceChannel, percentage);
+                    return interaction.editReply({ content: `音量を${percentage}%に設定しました` });
+                case "skip":
+                    await interaction.deferReply();
+                    const queue = client.distube.getQueue(guild);
+                    if (!queue) return interaction.editReply("キューに曲がありません");
+                    await queue.skip();
+                    return interaction.editReply("曲をスキップしました");
+                case "stop":
+                    await interaction.deferReply();
+                    const queueStop = client.distube.getQueue(guild);
+                    if (!queueStop) return interaction.editReply("キューに曲がありません");
+                    await queueStop.stop();
+                    return interaction.editReply("音楽を停止しました");
+                case "pause":
+                    await interaction.deferReply();
+                    const queuePause = client.distube.getQueue(guild);
+                    if (!queuePause) return interaction.editReply("キューに曲がありません");
+                    await queuePause.pause();
+                    return interaction.editReply("音楽を一時停止しました");
+                case "resume":
+                    await interaction.deferReply();
+                    const queueResume = client.distube.getQueue(guild);
+                    if (!queueResume) return interaction.editReply("キューに曲がありません");
+                    await queueResume.resume();
+                    return interaction.editReply("音楽を再開しました");
             }
-        } catch (error) {
-            console.error(error);
-            if (interaction.replied || interaction.deferred) {
-                await interaction.followUp({ content: 'このコマンドの実行中にエラーが発生しました。', flags: MessageFlags.Ephemeral });
-            } else {
-                await interaction.reply({ content: 'このコマンドの実行中にエラーが発生しました', flags: MessageFlags.Ephemeral });
-            }
+        } catch (e) {
+            console.error(e);
+            return interaction.reply({ content: `エラーが発生しました: ${e}`, ephemeral: true });
         }
     }
 };
