@@ -5,12 +5,21 @@ import { REST } from "@discordjs/rest";
 import { TOKEN } from "./config.json";
 import { ServerStatus } from "./dictionaries";
 
+
+
 interface ExtendedClient extends Client {
     player: Player;
     commands: Collection<string, any>;
 }
 
-export const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates] }) as ExtendedClient;
+export const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ], 
+}) as ExtendedClient; 
 client.commands = new Collection(); // コマンド用の Collection を作成
 
 const rest = new REST({ version: '9' }).setToken(TOKEN);

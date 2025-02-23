@@ -1,106 +1,84 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { QueryType, SearchResult, Player, PlayerNodeInitializerOptions } from "discord-player";
-import { Client, ChatInputCommandInteraction, MessageFlags, GuildMember, TextBasedChannel } from "discord.js";
-import { client } from "../../index";
+import { useQueue, Player } from "discord-player";
+import { ChatInputCommandInteraction, MessageFlags, GuildMember } from "discord.js";
+import { client } from "../../index"; // client をインポート
+import { SpotifyExtractor } from '@discord-player/extractor';
 
-const player = new Player(client, {});
+// SpotifyExtractorのインスタンスを作成
+const spotifyExtractor = new SpotifyExtractor();
 
 module.exports = {
     data: new SlashCommandBuilder()
-      .setName("lofi")
-      .setDescription("Lo-Fi音楽を再生します"),
-    async execute(client: Client, interaction: ChatInputCommandInteraction) {
-        // guildが存在しない場合はサーバー外でコマンドが実行されていると考え、エラーメッセージを返す
-        if (!interaction.guild) {
+        .setName("lofi")
+        .setDescription("Lo-Fi音楽を再生します"),
+    async execute(interaction: ChatInputCommandInteraction) {
+        const guildId = interaction.guildId;
+
+        if (!guildId || !client.guilds) {
+            console.error("guildId が取得できない、または client.guilds が undefined です。");
             return await interaction.reply({
-                content: "このコマンドはサーバー内でのみ使用できます",
+                content: "エラー: サーバー情報が取得できません。",
                 flags: MessageFlags.Ephemeral,
             });
         }
 
-        let member: GuildMember | null = null;
+        const guild = client.guilds.cache.get(guildId);
 
-        // interaction.memberが存在するか確認
-        if (interaction.member) {
-            member = await interaction.guild.members.fetch(interaction.member.user.id);
-        } else {
-            console.error("interaction.member is null");
+        if (!guild) {
+            console.error(`指定された guildId: ${guildId} のギルドが見つかりません`);
             return await interaction.reply({
-                content: "エラーが発生しました",
+                content: "エラー: サーバーが見つかりません。",
                 flags: MessageFlags.Ephemeral,
             });
         }
 
-        // ボイスチャンネルに参加しているか確認
-        if (!member.voice.channelId) {
+        const member = guild.members.cache.get(interaction.user.id) as GuildMember;
+
+        if (!member || !member.voice.channel) {
             return await interaction.reply({
                 content: "ボイスチャンネルに参加してください",
                 flags: MessageFlags.Ephemeral,
             });
         }
 
-        // 音楽再生用のキューを作成
-        const queue = player.queues.create(interaction.guild.id, {
-            metadata: {
-                channel: interaction.channel,
-            },
-        });
+        const player = new Player(client); // メインプレイヤーを取得
+        if (!interaction.guildId) {
+            return interaction.reply("このコマンドはギルド内でのみ使用できます。");
+        }
+
+        const queue = useQueue(interaction.guildId);
 
         if (!queue) {
+            // SpotifyExtractor をエクストラクターに登録
+            player.extractors.register(spotifyExtractor);
+
+            // プレイヤーのノードを作成
+            await player.nodes.create(interaction.guildId, interaction.channel);
+        }
+
+        try {
+            const queue = useQueue(interaction.guildId);
+            if (!queue) {
+                return interaction.reply("現在、音楽キューが存在しません。");
+            }
+
+            // Spotify プレイリストのリンクを使って検索
+            const track = await player.search("https://open.spotify.com/playlist/0vvXsWCC9xrXsKd4FyS8kM?si=v55Pi5ItS-KCO2rqSMAxmg", {
+                requestedBy: interaction.user,
+            }).then(x => x.tracks[0]);
+
+            if (!track) {
+                return interaction.reply("指定された曲が見つかりませんでした。");
+            }
+
+            queue.play(track);
+            return interaction.reply("音楽を再生しました");
+        } catch (error) {
+            console.error(error);
             return await interaction.reply({
-                content: "音楽が再生されていません",
+                content: "ボイスチャンネルに接続できません",
                 flags: MessageFlags.Ephemeral,
             });
-        }
-
-        // botが既にボイスチャンネルにいる場合、ユーザーと同じチャンネルに参加するかを確認
-        if (client.user && interaction.guild.members.cache.get(client.user.id)?.voice?.channelId && member instanceof GuildMember && member.voice.channelId !== interaction.guild.members.cache.get(client.user.id)?.voice?.channelId) {
-            return await interaction.reply({
-                content: "botと同じボイスチャンネルに参加してください",
-                flags: MessageFlags.Ephemeral,
-            });
-        }
-
-        // member.voice.channelがnullでないことを確認
-        if (member.voice.channel) {
-            await queue.connect(member.voice.channel);
-        } else {
-            return await interaction.reply({
-                content: "ボイスチャンネルに接続できませんでした",
-                flags: MessageFlags.Ephemeral,
-            });
-        }
-
-        await interaction.deferReply();
-
-        // 固定URLから動画を取得
-        const url = "https://www.youtube.com/live/jfKfPfyJRdk";
-
-        const track = await (client as any).player
-        .search(url, {
-            requestedBy: interaction.user,
-            searchEngine: QueryType.YOUTUBE_VIDEO,
-        })
-        .then((x: SearchResult) => {
-            const track = x.tracks[0];
-            return track;
-        });
-
-        if (!track) {
-            return await interaction.followUp({
-                content: "動画が見つかりませんでした",
-            });
-        }
-
-        // キューにトラックを追加
-        await queue.addTrack(track);
-
-        if (interaction.channel) {
-            const playOptions: PlayerNodeInitializerOptions<{ channel: TextBasedChannel | null; }> = {
-                nodeOptions: {},
-            };
-
-            queue.play(track, playOptions);
         }
     },
 };
