@@ -2,8 +2,13 @@ import { DisTube } from "distube";
 import { SpotifyPlugin } from "@distube/spotify";
 import { SoundCloudPlugin } from "@distube/soundcloud";
 import { YtDlpPlugin } from "@distube/yt-dlp";
-import { EmbedBuilder } from "discord.js";
-import { ExtendedClient } from "./index";
+import { EmbedBuilder, Client, Collection } from "discord.js";
+
+// ExtendedClient の定義をローカルに移動
+interface ExtendedClient extends Client {
+    commands: Collection<string, any>;
+    distube: DisTube;
+}
 
 export function initializeDisTube(client: ExtendedClient) {
     client.distube = new DisTube(client, {

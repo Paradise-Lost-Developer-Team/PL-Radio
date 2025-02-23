@@ -1,4 +1,4 @@
-import { Client, Events, GatewayIntentBits, ActivityType, MessageFlags, Collection, EmbedBuilder } from "discord.js";
+import { Client, Events, GatewayIntentBits, ActivityType, MessageFlags, Collection } from "discord.js";
 import { deployCommands } from "./deploy-commands";
 import { Player } from "discord-player";
 import { REST } from "@discordjs/rest";
