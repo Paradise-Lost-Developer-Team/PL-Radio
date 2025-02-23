@@ -4,8 +4,8 @@ import { Player } from "discord-player";
 import { REST } from "@discordjs/rest";
 import { TOKEN } from "./config.json";
 import { ServerStatus } from "./dictionaries";
-
-
+import { SpotifyExtractor } from '@discord-player/extractor';  // 追加
+import { EventEmitter } from "events";
 
 interface ExtendedClient extends Client {
     player: Player;
@@ -20,11 +20,25 @@ export const client = new Client({
         GatewayIntentBits.MessageContent
     ], 
 }) as ExtendedClient; 
-client.commands = new Collection(); // コマンド用の Collection を作成
+client.commands = new Collection();
 
 const rest = new REST({ version: '9' }).setToken(TOKEN);
 
 client.player = new Player(client);
+
+// 追加: "playerError" イベントリスナーを登録
+(client.player as unknown as EventEmitter).on("playerError", (queue: any, error: Error) => {
+    console.error(`Player error (playerError event) in guild ${queue.guild.id}: ${error.message}`);
+});
+
+// 追加: プレイヤーエラーイベントのリスナーを登録
+client.player.on("error", (error: Error) => {
+    console.error(`Player error: ${error.message}`);
+});
+
+
+// ここで SpotifyExtractor を登録
+client.player.extractors.register(SpotifyExtractor, {});
 
 client.once(Events.ClientReady, async () => {
     console.log("起動完了");
@@ -38,34 +52,20 @@ client.once(Events.ClientReady, async () => {
         client.user!.setActivity(`VC: ${joinVCCount}`, { type: ActivityType.Custom });
         await new Promise(resolve => setTimeout(resolve, 15000));
     }, 30000);
-
     client.guilds.cache.forEach(guild => {
-        new ServerStatus(guild.id); // 各ギルドのIDを保存するタスクを開始
-    });
+        new ServerStatus(guild.id);
+    })
 });
 
 client.on(Events.InteractionCreate, async interaction => {    
     if (!interaction.isChatInputCommand()) return;
-
+    const command = client.commands.get(interaction.commandName);
+    if (!command) return;
     try {
-        const command = client.commands.get(interaction.commandName);
-        if (!command) {
-            console.error(`No command matching ${interaction.commandName} was found.`);
-            return;
-        }
-
-        try {
-            await command.execute(interaction);
-        } catch (error) {
-            console.error(error);
-            if (interaction.replied || interaction.deferred) {
-                await interaction.followUp({ content: 'このコマンドの実行中にエラーが発生しました。', flags: MessageFlags.Ephemeral });
-            } else {
-                await interaction.reply({ content: 'このコマンドの実行中にエラーが発生しました', flags: MessageFlags.Ephemeral });
-            }
-        }
+        await command.execute(interaction);
     } catch (error) {
         console.error(error);
+        await interaction.reply({ content: 'コマンド実行時にエラーが発生しました', flags: MessageFlags.Ephemeral });
     }
 });
 
