@@ -81,6 +81,10 @@ module.exports = {
 
             switch (subcommand) {
                 case "play":
+                    if (!query) {
+                        embed.setColor("Red").setDescription("曲名を入力してください。");
+                        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                    }
                     client.distube.play(voiceChannel, query, { textChannel: channel, member: member });
                     return interaction.reply({ content: 'リクエストはキューに追加されました。' });
                 case "volume":
