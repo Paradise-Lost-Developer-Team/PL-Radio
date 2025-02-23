@@ -6,5 +6,27 @@
     "discord.js": "^14.18.0",
     "play-dl": "^1.9.7",
     "typescript": "^5.7.3"
-  }
+  },
+  "name": "pl-radio",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "tsc": ".\\node_modules\\.bin\\tsc",
+    "start": "node build/js/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Paladise-Lost-Developer-Team/PL-Radio.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Paladise-Lost-Developer-Team/PL-Radio/issues"
+  },
+  "homepage": "https://github.com/Paladise-Lost-Developer-Team/PL-Radio#readme"
 }
