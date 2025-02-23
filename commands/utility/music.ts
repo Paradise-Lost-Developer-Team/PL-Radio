@@ -59,7 +59,7 @@ module.exports = {
         const { options, member, guild, channel } = interaction;
 
         const subcommand = options.getSubcommand();
-        const query = options.getString("queue");
+        const query = options.getString("query");
         const volume = options.getNumber("percentage");
         const option = options.getString("option");
         const voiceChannel = member.voice.channel as VoiceChannel;
@@ -81,10 +81,6 @@ module.exports = {
 
             switch (subcommand) {
                 case "play":
-                    if (!query) {
-                        embed.setColor("Red").setDescription("曲名を入力してください。");
-                        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-                    }
                     client.distube.play(voiceChannel, query, { textChannel: channel, member: member });
                     return interaction.reply({ content: 'リクエストはキューに追加されました。' });
                 case "volume":
