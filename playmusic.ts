@@ -68,19 +68,12 @@ async function playNext(interaction: CommandInteraction, channel: any) {
     player.play(resource);
     currentConnection.subscribe(player);
 
-    if (interaction.replied || interaction.deferred) {
-        // すでに返信されている場合は、新しいメッセージを送る
-        await interaction.followUp(`Now playing: ${url}`);
-    } else {
-        await interaction.reply(`Now playing: ${url}`);
-    }
-
     player.once(AudioPlayerStatus.Idle, async () => {
         queue.shift();
         if (queue.length > 0) {
             await playNext(interaction, channel);
         } else {
-            await interaction.followUp('Queue is empty. Leaving the voice channel.');
+            await interaction.followUp('キューは空になりました、再生を終了します。');
             currentConnection?.destroy();
             currentConnection = null;
         }
