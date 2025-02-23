@@ -2,6 +2,9 @@ import { Client, Events, GatewayIntentBits, ActivityType, MessageFlags, Collecti
 import { deployCommands } from "./deploy-commands";
 import { REST } from "@discordjs/rest";
 import { TOKEN } from "./config.json";
+import { VoiceStateUpdate } from "playmusic";
+import { VoiceConnection } from "@discordjs/voice";
+
 interface ExtendedClient extends Client {
     commands: Collection<string, any>;
 }
@@ -14,6 +17,13 @@ const rest = new REST({ version: '9' }).setToken(TOKEN);
 client.once(Events.ClientReady, async () => {
     console.log("起動完了");
     await deployCommands();
+    const voiceAdapterEntry = client.voice.adapters.entries().next();
+    if (voiceAdapterEntry && voiceAdapterEntry.value) {
+      const voiceAdapter = voiceAdapterEntry.value[1] as unknown as VoiceConnection; // Cast the object to VoiceConnection
+      if (voiceAdapter) {
+        await VoiceStateUpdate(voiceAdapter);
+      }
+    }
     client.user!.setActivity("起動中…", { type: ActivityType.Playing });
     setInterval(async () => {
         const joinServerCount = client.guilds.cache.size;

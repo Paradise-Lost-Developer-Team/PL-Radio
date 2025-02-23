@@ -1,7 +1,8 @@
-import { CommandInteraction, CommandInteractionOptionResolver, MessageFlags } from "discord.js";
-import { joinVoiceChannel, AudioPlayerStatus, createAudioPlayer, createAudioResource, VoiceConnection } from "@discordjs/voice";
+import { CommandInteraction, CommandInteractionOptionResolver, MessageFlags, Events, ChannelType } from "discord.js";
+import { joinVoiceChannel, AudioPlayerStatus, createAudioPlayer, createAudioResource, VoiceConnection  } from "@discordjs/voice";
 import * as play from "play-dl";
 import prism from "prism-media";
+import { client } from "./index";
 
 export const player = createAudioPlayer();
 export let queue: string[] = [];
@@ -10,6 +11,30 @@ export const VolumeTransfromer = new prism.VolumeTransformer({
     volume: 0.5,
     type: 's16le'
 });
+
+export function VoiceStateUpdate(connection: VoiceConnection) {
+    client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
+        if (newState.member?.user.bot) return;
+        const voiceChannel = newState.channel ?? oldState.channel;
+        if (voiceChannel?.members.size === 0 && voiceChannel.type === ChannelType.GuildVoice) {
+          // ボイスチャンネルが空になったときに自動で抜ける
+          try {
+            const connection = await joinVoiceChannel({
+                channelId: voiceChannel.id,
+                guildId: voiceChannel.guild.id, 
+                adapterCreator: voiceChannel.guild.voiceAdapterCreator as any
+            });
+            if (connection) {
+              setTimeout(() => {
+                connection.destroy(); // チャンネルが空であれば退室
+              }, 10000); // 10秒後に退室
+            }
+          } catch (error) {
+            console.error('Error joining the voice channel:', error);
+          }
+        }
+      });
+}
 
 export async function playMusic(interaction: CommandInteraction, p0: string) {
     const channel = (interaction.member as any).voice.channel;
