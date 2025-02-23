@@ -1,30 +1,5 @@
 import * as fs from 'fs';
 
-export async function fetchUUIDsPeriodically() {
-    while (true) {
-        fetchAllUUIDs();
-        await new Promise(resolve => setTimeout(resolve, 300000)); // 5分ごとに実行
-    }
-}
-
-export async function fetchAllUUIDs(retries = 3): Promise<{ [key: string]: any }> {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-            const response = await fetch("http://localhost:10101/user_dict");
-            if (!response.ok) {
-                throw new Error(`Error fetching user dictionary: ${response.statusText}`);
-            }
-            return await response.json();
-        } catch (error) {
-            console.error(`Attempt ${attempt} - Error fetching user dictionary:`, error);
-            if (attempt === retries) {
-                return {};
-            }
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
-        }
-    }
-    return {};
-}
 export class ServerStatus {
     guildId: string;
     constructor(guildId: string) {
