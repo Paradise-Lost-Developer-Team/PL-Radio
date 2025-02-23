@@ -16,7 +16,7 @@ module.exports = {
                 flags: MessageFlags.Ephemeral,
             });
         }
-    
+
         if (interaction.member) {
             const member = await interaction.guild.members.fetch(interaction.member.user.id);
             // ... rest of your code
@@ -61,14 +61,14 @@ module.exports = {
                 flags: MessageFlags.Ephemeral,
             });
         }
-        
+
         if (member instanceof GuildMember && !member.voice.channelId) {
             return await interaction.reply({
                 content: "ボイスチャンネルに参加してください",
                 flags: MessageFlags.Ephemeral,
             });
         }
-        
+
         if (interaction.member instanceof GuildMember && interaction.member.voice.channel) {
             await queue.connect(interaction.member.voice.channel);
         } else {
@@ -79,35 +79,37 @@ module.exports = {
             });
         }
 
-    await interaction.deferReply();
+        await interaction.deferReply();
 
-    const url = interaction.options.getString("https://www.youtube.com/live/jfKfPfyJRdk");
-    // 入力されたURLからトラックを取得
-    const track = await (client as any).player
-    .search(url, {
-        requestedBy: interaction.user,
-        searchEngine: QueryType.YOUTUBE_VIDEO,
-    })
-    .then((x: SearchResult) => {
-        const track = x.tracks[0];
-        return track;
-    });
+        // 固定のURLを使用
+        const url = "https://www.youtube.com/live/jfKfPfyJRdk";
 
-    if (!track) {
-        return await interaction.followUp({
-            content: "動画が見つかりませんでした",
+        // 入力されたURLからトラックを取得
+        const track = await (client as any).player
+        .search(url, {
+            requestedBy: interaction.user,
+            searchEngine: QueryType.YOUTUBE_VIDEO,
+        })
+        .then((x: SearchResult) => {
+            const track = x.tracks[0];
+            return track;
         });
-    }
-    
-    // キューにトラックを追加
-    await queue.addTrack(track);
 
-    if (interaction.channel) {
-        const playOptions: PlayerNodeInitializerOptions<{ channel: TextBasedChannel | null; }> = {
-            nodeOptions: {},
-        };
-        
-        queue.play(track, playOptions);
-    }
+        if (!track) {
+            return await interaction.followUp({
+                content: "動画が見つかりませんでした",
+            });
+        }
+
+        // キューにトラックを追加
+        await queue.addTrack(track);
+
+        if (interaction.channel) {
+            const playOptions: PlayerNodeInitializerOptions<{ channel: TextBasedChannel | null; }> = {
+                nodeOptions: {},
+            };
+
+            queue.play(track, playOptions);
+        }
     },
 };
