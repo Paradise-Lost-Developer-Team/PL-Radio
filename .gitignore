@@ -132,3 +132,5 @@ config.json
 
 /build
 guild_id.txt
+package.json
+package-lock.json
