@@ -37,8 +37,11 @@ export function initializeDisTube(client: ExtendedClient) {
             })
         )
         .on('error', (channel: any, e: any) => {
-            if (channel) channel.send(`⛔ | エラー: ${e.toString().slice(0, 1974)}`);
-            else console.error(e);
+            if (channel) {
+                channel.send(`⛔ | エラー: ${e.toString().slice(0, 1974)}`);
+            } else {
+                console.error(e);
+            }
         })
         .on('empty', (channel: any) => channel.send({
             embeds: [new EmbedBuilder().setColor("Red")
@@ -53,5 +56,12 @@ export function initializeDisTube(client: ExtendedClient) {
         .on('finish', (queue: any) => queue.textChannel.send({
             embeds: [new EmbedBuilder().setColor('#a200ff')
                 .setDescription('🏁 | キューが終了しました!')]
-        }));
+        }))
+        .on('error', (channel: any, error: any) => {
+            if (error.message.includes("This video is only available to Music Premium members")) {
+                channel.send("⛔ | この動画はMusic Premiumメンバー専用です。別の動画を選んでください。");
+            } else {
+                channel.send(`⛔ | エラー: ${error.toString().slice(0, 1974)}`);
+            }
+        });
 }
