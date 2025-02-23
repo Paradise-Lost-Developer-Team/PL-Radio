@@ -1,7 +1,13 @@
 import { CommandInteraction, MessageFlags } from "discord.js";
 import { joinVoiceChannel, VoiceConnection, createAudioResource } from "@discordjs/voice";
 import * as play from "play-dl";
-import { player } from "./playmusic";
+import { player, headers, fetchVideoInfo } from "./playmusic";
+
+const lofiUrl = 'https://www.youtube.com/watch?v=jfKfPfyJRdk';
+
+headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36';
+
+fetchVideoInfo(lofiUrl)
 
 let currentConnection: VoiceConnection | null = null;
 
@@ -11,7 +17,6 @@ export async function playLofi(interaction: CommandInteraction) {
         await interaction.reply({ content: "Lo-Fi音楽を再生するにはボイスチャンネルに接続する必要があります", flags: MessageFlags.Ephemeral });
         return;
     }
-    const lofiUrl = 'https://www.youtube.com/watch?v=jfKfPfyJRdk';
     const stream = await play.stream(lofiUrl);
     const resource = createAudioResource(stream.stream, { inputType: stream.type });
     const connection = joinVoiceChannel({

@@ -12,6 +12,19 @@ export const VolumeTransfromer = new prism.VolumeTransformer({
     type: 's16le'
 });
 
+export const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+};
+
+export async function fetchVideoInfo(url: string) {
+    try {
+        const responce = await fetch(url, { headers });
+        return await responce.json();
+    } catch (error) {
+        console.error('Error fetching video info:', error);
+    }
+}
+
 export function VoiceStateUpdate(connection: VoiceConnection) {
     client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
         if (newState.member?.user.bot) return;
@@ -87,6 +100,7 @@ async function playNext(interaction: CommandInteraction, channel: any) {
     currentConnection.subscribe(player);
 
     await interaction.followUp(`🎵 次の音楽を再生中: ${url}`);
+    fetchVideoInfo(url)
     
     player.once(AudioPlayerStatus.Idle, () => {
         queue.shift();
