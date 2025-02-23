@@ -1,29 +1,25 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { MessageEmbed, MessageFlags } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
+import { ExtendedClient } from '../../index';
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('skip')
-        .setDescription('次の曲を再生します'),
-    execute: async ({client, interaction}) => {
-
-        const queue = client.player.getQueue(interaction.guildId);
-
+        .setDescription('現在の曲をスキップします'),
+    execute: async (args: { client: ExtendedClient; interaction: ChatInputCommandInteraction }) => {
+        const { client, interaction } = args;
+        const queue = client.player.queues.get(interaction.guildId!);
         if (!queue) {
-            await interaction.reply({ content: '音楽が再生されていません', flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: '音楽が再生されていません', ephemeral: true });
             return;
         }
-
-        const currentSong = queue.current;
-
-        queue.skip();
-
-        await interaction.reply({ 
-            embeds: [
-                new MessageEmbed()
-                .setDescription(`[${currentSong.title}](${currentSong.url}) をスキップしました`)
-                .setThumbnail(currentSong.thumbnail)
-            ] 
-        });
+        // 現在の曲は currentTrack に変更
+        const currentSong = queue.currentTrack;
+        // スキップは node.skip() を使用
+        queue.node.skip();
+        const embed = new EmbedBuilder()
+            .setTitle('スキップ')
+            .setDescription(`曲をスキップしました。 Now playing: ${currentSong ? currentSong.title : "なし"}`);
+        await interaction.reply({ embeds: [embed] });
     }
-}
+};

@@ -1,23 +1,22 @@
-import { Client, Events, ActivityType, MessageFlags, Collection } from "discord.js";
+import { Client, Events, GatewayIntentBits, ActivityType, MessageFlags, Collection } from "discord.js";
 import { deployCommands } from "./deploy-commands";
 import { Player } from "discord-player";
 import { REST } from "@discordjs/rest";
-import { Routes } from "discord-api-types/v9";
 import { TOKEN } from "./config.json";
 import { ServerStatus } from "./dictionaries";
 import fs from "node:fs";
 import path from "node:path";
 
-interface ExtendedClient extends Client {
+export interface ExtendedClient extends Client {  // export 追加
     player: Player;
     commands: Collection<string, any>;
 }
 
 export const client = new Client({
     intents: [
-        Intents.FLAGS.GUILDS,
-        Intents.FLAGS.GUILD_MESSAGES,
-        Intents.FLAGS.GUILD_VOICE_STATES
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildVoiceStates
     ],
 }) as ExtendedClient; 
 
@@ -25,12 +24,8 @@ client.commands = new Collection();
 
 const rest = new REST({ version: '9' }).setToken(TOKEN);
 
-client.player = new Player(client, {
-    ytdlOptions: {
-        quality: 'highestaudio',
-        highWaterMark: 1 << 25
-    }
-});
+// Player 初期化時の ytdlOptions プロパティを削除
+client.player = new Player(client);
 
 client.once(Events.ClientReady, async () => {
     console.log("起動完了");
@@ -46,7 +41,7 @@ client.once(Events.ClientReady, async () => {
     }, 30000);
     client.guilds.cache.forEach(guild => {
         new ServerStatus(guild.id);
-    })
+    });
 });
 
 client.on(Events.InteractionCreate, async interaction => {    
@@ -57,7 +52,6 @@ client.on(Events.InteractionCreate, async interaction => {
         await command.execute(interaction);
     } catch (error) {
         console.error(error);
-        // 既に応答済みの場合は followUp を使う
         if (interaction.replied || interaction.deferred) {
             await interaction.followUp({ content: 'コマンド実行時にエラーが発生しました', ephemeral: true });
         } else {

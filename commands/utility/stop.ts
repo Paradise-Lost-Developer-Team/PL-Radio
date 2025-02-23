@@ -1,21 +1,22 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { MessageEmbed } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
+import { ExtendedClient } from '../../index';
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('stop')
         .setDescription('音楽を停止します'),
-    execute: async ({client, interaction}) => {
-
-        const queue = client.player.getQueue(interaction.guildId);
-
+    execute: async (args: { client: ExtendedClient; interaction: ChatInputCommandInteraction }) => {
+        const { client, interaction } = args;
+        const queue = client.player.queues.get(interaction.guildId!);
         if (!queue) {
-            await interaction.reply({ content: '音楽が再生されていません', flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: '音楽が再生されていません', ephemeral: true });
             return;
         }
-
-        queue.destroy();
-
-        await interaction.reply("音楽を停止しました。");
+        queue.delete(); // delete() を使用してキューを削除
+        const embed = new EmbedBuilder()
+            .setTitle('停止')
+            .setDescription('音楽の再生を停止しました');
+        await interaction.reply({ embeds: [embed] });
     }
-}
+};

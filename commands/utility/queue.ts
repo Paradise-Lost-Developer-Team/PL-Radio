@@ -1,31 +1,28 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { MessageEmbed } from 'discord.js';
+import { EmbedBuilder, ChatInputCommandInteraction } from 'discord.js';
+import { ExtendedClient } from '../../index';
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('queue')
-        .setDescription('音楽のキューを表示します'),
-    execute: async ({client, interaction}) => {
-
-        const queue = client.player.getQueue(interaction.guildId);
-
-        if (!queue || !queue.playing) {
-            await interaction.reply({ content: '音楽が再生されていません', flags: MessageFlags.Ephemeral });
+        .setDescription('現在のキューを表示します'),
+    execute: async (args: { client: ExtendedClient; interaction: ChatInputCommandInteraction }) => {
+        const { client, interaction } = args;
+        // queues.get を使用
+        const queue = client.player.queues.get(interaction.guildId!);
+        if (!queue) {
+            await interaction.reply({ content: '音楽が再生されていません', ephemeral: true });
             return;
         }
-
-        const queueString = queue.tracks.slice(0, 10).map((song, i) => {
-            return `${i + 1}) [${song.duration}]\` ${song.title} - <@${song.requestedBy.id}>`;
-        }).join('\n');
-
-        const currentSong = queue.current;
-
-        await interaction.reply({
-            embeds: [
-                new MessageEmbed()
-                    .setDescription(`**現在再生中:**\n\`${currentSong.title} - <@${currentSong.requestedBy.id}>\n\n**キュー:**\n${queueString}`)
-                    .setThumbnail(currentSong.thumbnail)
-            ]
-        })
+        // queue.tracks が配列でない場合、 Array.from() を利用
+        const tracksArray = Array.from((queue.tracks as any).values()); // 変更: .values() を利用
+        // map の引数に型注釈を追加
+        const queueString = tracksArray.slice(0, 10).map((song: any, i: number) => {
+            return `${i + 1}. ${song.title}`;
+        }).join("\n") || 'キューは空です';
+        const embed = new EmbedBuilder()
+            .setTitle('キュー')
+            .setDescription(queueString);
+        await interaction.reply({ embeds: [embed] });
     }
-}
+};
