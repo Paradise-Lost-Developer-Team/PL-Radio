@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { EmbedBuilder, ChatInputCommandInteraction } from 'discord.js';
+import { EmbedBuilder, ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { QueryType } from 'discord-player';
-import { ExtendedClient } from '../../index';
+import { client } from '../../index';
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -40,19 +40,27 @@ module.exports = {
                         .setRequired(true)
                 )
         ),
-    execute: async (args: { client: ExtendedClient; interaction: ChatInputCommandInteraction }) => {
-        const { client, interaction } = args;
-        const member = interaction.member as any;
-        if (!member || !member.voice || !member.voice.channel) {
-            await interaction.reply({ content: 'ボイスチャンネルに接続してください。', ephemeral: true });
+    // interaction 単体を引数にするように変更
+    execute: async (interaction: ChatInputCommandInteraction) => {
+        if (!interaction.guild) {
+            await interaction.reply({ content: 'このコマンドはサーバー専用です。', flags: MessageFlags.Ephemeral });
             return;
         }
-        // キュー生成は queues.create を利用
-        const queue = client.player.queues.create(interaction.guild!.id, { metadata: { channel: interaction.channel } });
+        // interaction.member の存在チェック
+        if (!interaction.member) {
+            await interaction.reply({ content: 'メンバー情報が取得できませんでした。', flags: MessageFlags.Ephemeral });
+            return;
+        }
+        const member = interaction.member as any;
+        if (!member.voice || !member.voice.channel) {
+            await interaction.reply({ content: 'ボイスチャンネルに接続してください。', flags: MessageFlags.Ephemeral });
+            return;
+        }
+        // キュー生成
+        const queue = client.player.queues.create(interaction.guild.id, { metadata: { channel: interaction.channel } });
         if (!queue.connection) await queue.connect(member.voice.channel);
-        
+
         let embed = new EmbedBuilder();
-        // サブコマンド 'song'
         if (interaction.options.getSubcommand() === 'song') {
             const url = interaction.options.getString('url');
             const result = await client.player.search(url!, {
@@ -60,7 +68,7 @@ module.exports = {
                 searchEngine: QueryType.YOUTUBE_VIDEO
             });
             if (result.tracks.length === 0) {
-                await interaction.reply({ content: '曲を検索できませんでした', ephemeral: true });
+                await interaction.reply({ content: '曲を検索できませんでした', flags: MessageFlags.Ephemeral });
                 return;
             }
             const song = result.tracks[0];
@@ -69,19 +77,16 @@ module.exports = {
                 .setDescription(`キューへ**[${song.title}](${song.url})** 追加されました。`)
                 .setThumbnail(song.thumbnail)
                 .setFooter({ text: `再生時間: ${song.duration}` });
-        }
-        // サブコマンド 'playlist'
-        else if (interaction.options.getSubcommand() === 'playlist') {
+        } else if (interaction.options.getSubcommand() === 'playlist') {
             const url = interaction.options.getString('url');
             const result = await client.player.search(url!, {
                 requestedBy: interaction.user,
                 searchEngine: QueryType.YOUTUBE_PLAYLIST
             });
             if (result.tracks.length === 0) {
-                await interaction.reply({ content: 'プレイリストを検索できませんでした', ephemeral: true });
+                await interaction.reply({ content: 'プレイリストを検索できませんでした', flags: MessageFlags.Ephemeral });
                 return;
             }
-            // 各トラックを順次追加
             for (const track of result.tracks) {
                 await queue.addTrack(track);
             }
@@ -89,16 +94,14 @@ module.exports = {
                 .setDescription(`キューに**${result.tracks.length}**曲追加されました。`)
                 .setThumbnail(result.tracks[0].thumbnail)
                 .setFooter({ text: `再生時間: 不明` });
-        }
-        // サブコマンド 'search'
-        else if (interaction.options.getSubcommand() === 'search') {
+        } else if (interaction.options.getSubcommand() === 'search') {
             const searchterms = interaction.options.getString('searchterms');
             const result = await client.player.search(searchterms!, {
                 requestedBy: interaction.user,
                 searchEngine: QueryType.AUTO,
             });
             if (result.tracks.length === 0) {
-                await interaction.reply({ content: '曲を検索できませんでした', ephemeral: true });
+                await interaction.reply({ content: '曲を検索できませんでした', flags: MessageFlags.Ephemeral });
                 return;
             }
             const song = result.tracks[0];
@@ -108,7 +111,6 @@ module.exports = {
                 .setThumbnail(song.thumbnail)
                 .setFooter({ text: `再生時間: ${song.duration}` });
         }
-        // 再生中でなければ再生開始（引数不要）
         if (!queue.node.isPlaying()) await queue.node.play();
         await interaction.reply({ embeds: [embed] });
     }

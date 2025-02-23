@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { EmbedBuilder, ChatInputCommandInteraction } from 'discord.js';
+import { EmbedBuilder, ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { ExtendedClient } from '../../index';
 
 module.exports = {
@@ -11,7 +11,7 @@ module.exports = {
         // queues.get を使用
         const queue = client.player.queues.get(interaction.guildId!);
         if (!queue) {
-            await interaction.reply({ content: '音楽が再生されていません', ephemeral: true });
+            await interaction.reply({ content: '音楽が再生されていません', flags: MessageFlags.Ephemeral });
             return;
         }
         // queue.tracks が配列でない場合、 Array.from() を利用

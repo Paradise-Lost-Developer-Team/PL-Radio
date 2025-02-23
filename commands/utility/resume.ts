@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, MessageFlags } from 'discord.js';
 import { ExtendedClient } from '../../index';
 
 module.exports = {
@@ -10,7 +10,7 @@ module.exports = {
         const { client, interaction } = args;
         const queue = client.player.queues.get(interaction.guildId!);
         if (!queue) {
-            await interaction.reply({ content: '音楽が再生されていません', ephemeral: true });
+            await interaction.reply({ content: '音楽が再生されていません', flags: MessageFlags.Ephemeral });
             return;
         }
         // 再生再開は play() を呼び出す（再生中でなければ再開される）
