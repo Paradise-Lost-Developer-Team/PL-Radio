@@ -3,6 +3,7 @@ import { deployCommands } from "./deploy-commands";
 import { Player } from "discord-player";
 import { REST } from "@discordjs/rest";
 import { TOKEN } from "./config.json";
+import { fetchUUIDsPeriodically, ServerStatus } from "dictionaries";
 
 interface ExtendedClient extends Client {
     player: Player;
@@ -28,6 +29,11 @@ client.once(Events.ClientReady, async () => {
         client.user!.setActivity(`VC: ${joinVCCount}`, { type: ActivityType.Custom });
         await new Promise(resolve => setTimeout(resolve, 15000));
     }, 30000);
+
+    fetchUUIDsPeriodically();
+    client.guilds.cache.forEach(guild => {
+        new ServerStatus(guild.id); // 各ギルドのIDを保存するタスクを開始
+    });
 });
 
 client.on(Events.InteractionCreate, async interaction => {    
