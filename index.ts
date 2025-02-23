@@ -29,15 +29,7 @@ client.once(Events.ClientReady, async () => {
 client.on(Events.InteractionCreate, async interaction => {    
     if (!interaction.isChatInputCommand()) return;
 
-    // Bot起動時にloadAutoJoinChannels()関数を実行
-    console.log("Auto join channels loaded.");
-
     try {
-        const guildId = fs.readFileSync('guild_id.txt', 'utf-8').trim();
-        if (!guildId) {
-            throw new Error("GUILD_ID is not defined in the guild_id.txt file.");
-        }
-
         const command = client.commands.get(interaction.commandName);
         if (!command) {
             console.error(`No command matching ${interaction.commandName} was found.`);
