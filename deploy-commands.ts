@@ -1,13 +1,13 @@
 import { Routes } from 'discord-api-types/v9';
 import { REST } from '@discordjs/rest';
-import { client } from './index';
+import { ExtendedClient } from './index'; // client をインポート
 import { clientId, TOKEN, guildId } from './config.json';
 import fs from 'node:fs';
 import path from 'node:path';
 
 console.log("Starting deploy-commands.ts");
 
-export const deployCommands = async () => {
+export const deployCommands = async (client: ExtendedClient) => { // client を引数として受け取る
     const commands: any[] = [];
     // Grab all the command folders from the commands directory you created earlier
     const foldersPath = path.join(__dirname, 'commands');

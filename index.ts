@@ -14,7 +14,7 @@ export interface ExtendedClient extends Client {
     distube: DisTube;
 }
 
-export const client = new Client({
+const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
@@ -22,13 +22,13 @@ export const client = new Client({
     ],
 }) as ExtendedClient;
 
-client.commands = new Collection();
+client.commands = new Collection(); // client.commands を初期化
 
 const rest = new REST({ version: '9' }).setToken(TOKEN);
 
 client.once(Events.ClientReady, async () => {
     console.log("起動完了");
-    await deployCommands();
+    await deployCommands(client); // client を引数として渡す
     initializeDisTube(client); // DisTube を初期化
     client.user!.setActivity("起動中…", { type: ActivityType.Playing });
     setInterval(async () => {
@@ -52,7 +52,7 @@ client.on(Events.InteractionCreate, async interaction => {
         await command.execute(interaction);
     } catch (error) {
         console.error(error);
-        if (interaction.replied or interaction.deferred) {
+        if (interaction.replied || interaction.deferred) {
             await interaction.followUp({ content: 'コマンド実行時にエラーが発生しました', flags: MessageFlags.Ephemeral });
         } else {
             await interaction.reply({ content: 'コマンド実行時にエラーが発生しました', flags: MessageFlags.Ephemeral });
@@ -61,3 +61,5 @@ client.on(Events.InteractionCreate, async interaction => {
 });
 
 client.login(TOKEN);
+
+module.exports = { client };
