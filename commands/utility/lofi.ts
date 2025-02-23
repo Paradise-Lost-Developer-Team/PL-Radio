@@ -7,8 +7,8 @@ const player = new Player(client, {});
 
 module.exports = {
     data: new SlashCommandBuilder()
-      .setName("play")
-      .setDescription("音楽を再生します"),
+      .setName("lofi")
+      .setDescription("Lo-Fi音楽を再生します"),
     async execute(client: Client, interaction: ChatInputCommandInteraction) {
         if (!interaction.guild) {
             return await interaction.reply({
