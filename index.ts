@@ -4,8 +4,6 @@ import { Player } from "discord-player";
 import { REST } from "@discordjs/rest";
 import { TOKEN } from "./config.json";
 import { ServerStatus } from "./dictionaries";
-import fs from "node:fs";
-import path from "node:path";
 import { DisTube, Queue, Song, Playlist, DisTubeEvents } from "distube";
 import { SpotifyPlugin } from "@distube/spotify";
 import { SoundCloudPlugin } from "@distube/soundcloud";
