@@ -1,57 +1,89 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { QueryType, SearchResult } from "discord-player";
+import { QueryType, SearchResult, Player, PlayerNodeInitializerOptions } from "discord-player";
+import { Client, ChatInputCommandInteraction, MessageFlags, GuildMember, TextBasedChannel } from "discord.js";
 import { client } from "../../index";
+
+const player = new Player(client, {});
 
 module.exports = {
     data: new SlashCommandBuilder()
       .setName("play")
-      .setDescription("Lo-Fi音楽を再生します"),
-  
-    run: async ({ client, interaction }: { client: any, interaction: any}) => {
-      const member = await interaction.guild.members.fetch(interaction.member.user.id);
-      if (!member.voiceState.channelId) {
-        return await interaction.reply({
-          content: "ボイスチャンネルに参加してください",
-          ephemeral: true,
-        });
-      }
-  
-      if (
-        interaction.guild.me.voiceState.channelId &&
-        member.voiceState.channelId !==
-        interaction.guild.me.voiceState.channelId
-    ) {
-        return await interaction.reply({
-            content: "botと同じボイスチャンネルに参加してください",
-            ephemeral: true,
-    });
-    }
-
-    // キューを生成
-    const queue = client.player.createQueue(interaction.guild, {
-        metadata: {
-            channel: interaction.channel,
-        },
-    });
-
-    try {
-        // VCに入ってない場合、VCに参加する
-        if (!queue.connection) {
-            await queue.connect(interaction.member.voice.channel);
+      .setDescription("音楽を再生します"),
+    async execute(client: Client, interaction: ChatInputCommandInteraction) {
+        if (!interaction.guild) {
+            return await interaction.reply({
+                content: "このコマンドはサーバー内でのみ使用できます",
+                flags: MessageFlags.Ephemeral,
+            });
         }
-    } catch {
-        queue.destroy();
-        return await interaction.reply({
-            content: "ボイスチャンネルに参加できませんでした",
-            ephemeral: true,
-        });
-    }
+    
+        if (interaction.member) {
+            const member = await interaction.guild.members.fetch(interaction.member.user.id);
+            // ... rest of your code
+        } else {
+            // handle the case where interaction.member is null
+            console.error("interaction.member is null");
+            return await interaction.reply({
+                content: "エラーが発生しました",
+                flags: MessageFlags.Ephemeral,
+            });
+        }
+
+        // キューを生成
+        const queue = player.queues.create(interaction.guild.id, {
+            metadata: {
+              channel: interaction.channel,
+            },
+          });
+
+          if (!queue) {
+            return await interaction.reply({
+                content: "音楽が再生されていません",
+                flags: MessageFlags.Ephemeral,
+            });
+        }
+
+        let member: GuildMember | null = null;
+
+        if (interaction.member) {
+            member = await interaction.guild.members.fetch(interaction.member.user.id);
+        } else {
+            console.error("interaction.member is null");
+            return await interaction.reply({
+                content: "エラーが発生しました",
+                flags: MessageFlags.Ephemeral,
+            });
+        }
+
+        if (client.user && interaction.guild.members.cache.get(client.user.id)?.voice?.channelId && member instanceof GuildMember && member.voice.channelId !== interaction.guild.members.cache.get(client.user.id)?.voice?.channelId) {
+            return await interaction.reply({
+                content: "botと同じボイスチャンネルに参加してください",
+                flags: MessageFlags.Ephemeral,
+            });
+        }
+        
+        if (member instanceof GuildMember && !member.voice.channelId) {
+            return await interaction.reply({
+                content: "ボイスチャンネルに参加してください",
+                flags: MessageFlags.Ephemeral,
+            });
+        }
+        
+        if (interaction.member instanceof GuildMember && interaction.member.voice.channel) {
+            await queue.connect(interaction.member.voice.channel);
+        } else {
+            (queue as unknown as Player).destroy();
+            return await interaction.reply({
+                content: "ボイスチャンネルに参加できませんでした",
+                flags: MessageFlags.Ephemeral,
+            });
+        }
 
     await interaction.deferReply();
 
-    const url = interaction.options.getString("https://www.youtube.com/watch?v=jfKfPfyJRdk");
+    const url = interaction.options.getString("https://www.youtube.com/live/jfKfPfyJRdk");
     // 入力されたURLからトラックを取得
-    const track = await client.player
+    const track = await (client as any).player
     .search(url, {
         requestedBy: interaction.user,
         searchEngine: QueryType.YOUTUBE_VIDEO,
@@ -66,17 +98,16 @@ module.exports = {
             content: "動画が見つかりませんでした",
         });
     }
-
+    
     // キューにトラックを追加
     await queue.addTrack(track);
 
-    // 音楽が再生中ではない場合、再生
-    if (!queue.playing) {
-        queue.play();
+    if (interaction.channel) {
+        const playOptions: PlayerNodeInitializerOptions<{ channel: TextBasedChannel | null; }> = {
+            nodeOptions: {},
+        };
+        
+        queue.play(track, playOptions);
     }
-
-        return await interaction.followUp({
-            content: `音楽をキューに追加しました **${track.title}**`,
-        });
     },
 };
