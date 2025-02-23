@@ -1,5 +1,6 @@
 # PL-Radio
 [![Release](https://img.shields.io/github/release/Paladise-Lost-Developer-Team/PL-Radio?include_prereleases=&sort=semver&color=blue)](https://github.com/Paladise-Lost-Developer-Team/PL-Radio/releases/)
+[![Discord](https://discord.com/api/guilds/1337303326332813334/widget.png)](https://discord.gg/MPx2ny8HXT)
 
 PL-Radioは、Discord上で使用できる高品質、高音質な音楽Botです。
 
