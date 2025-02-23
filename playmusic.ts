@@ -1,10 +1,15 @@
 import { CommandInteraction, CommandInteractionOptionResolver, MessageFlags } from "discord.js";
 import { joinVoiceChannel, AudioPlayerStatus, createAudioPlayer, createAudioResource, VoiceConnection } from "@discordjs/voice";
 import * as play from "play-dl";
+import prism from "prism-media";
 
 export const player = createAudioPlayer();
 export let queue: string[] = [];
 export let currentConnection: VoiceConnection | null = null;
+export const VolumeTransfromer = new prism.VolumeTransformer({
+    volume: 0.5,
+    type: 's16le'
+});
 
 export async function playMusic(interaction: CommandInteraction, p0: string) {
     const channel = (interaction.member as any).voice.channel;

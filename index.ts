@@ -1,7 +1,6 @@
 import { Client, Events, GatewayIntentBits, ActivityType, MessageFlags, Collection } from "discord.js";
 import { deployCommands } from "./deploy-commands";
 import { REST } from "@discordjs/rest";
-import * as fs from "fs";
 import { TOKEN } from "./config.json";
 interface ExtendedClient extends Client {
     commands: Collection<string, any>;
