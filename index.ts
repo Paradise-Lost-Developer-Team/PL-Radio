@@ -1,4 +1,5 @@
 import { Client, Events, GatewayIntentBits, ActivityType, MessageFlags, Collection } from "discord.js";
+import { deployCommands } from "./deploy-commands";
 import { REST } from "@discordjs/rest";
 import * as fs from "fs";
 import { TOKEN } from "./config.json";
@@ -13,6 +14,7 @@ const rest = new REST({ version: '9' }).setToken(TOKEN);
 
 client.once(Events.ClientReady, async () => {
     console.log("起動完了");
+    await deployCommands();
     client.user!.setActivity("起動中…", { type: ActivityType.Playing });
     setInterval(async () => {
         const joinServerCount = client.guilds.cache.size;
