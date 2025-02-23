@@ -2,7 +2,7 @@ import { Client, Events, GatewayIntentBits, ActivityType, MessageFlags, Collecti
 import { deployCommands } from "./deploy-commands";
 import { REST } from "@discordjs/rest";
 import { TOKEN } from "./config.json";
-import { VoiceStateUpdate } from "playmusic";
+import { VoiceStateUpdate } from "./playmusic";
 import { VoiceConnection } from "@discordjs/voice";
 
 interface ExtendedClient extends Client {
