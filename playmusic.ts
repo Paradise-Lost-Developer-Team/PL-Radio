@@ -34,8 +34,6 @@ export async function playMusic(interaction: CommandInteraction, p0: string) {
 
     player.play(resource);
     connection.subscribe(player);
-
-    await interaction.reply({ content: `音楽を再生中: ${url}`, components: [] });
     await playNext(interaction, channel);
 }
 
@@ -54,28 +52,62 @@ export async function stopMusic(interaction: CommandInteraction) {
 
 async function playNext(interaction: CommandInteraction, channel: any) {
     if (queue.length === 0) return;
+
     const url = queue[0];
 
-    const stream = await play.stream(url);
-    const resource = createAudioResource(stream.stream, { inputType: stream.type });
+    try {
+        console.log('Fetching stream for URL:', url);
+        const stream = await play.stream(url);
+        console.log('Stream info:', stream);
 
-    currentConnection = joinVoiceChannel({
-        channelId: channel.id,
-        guildId: channel.guild.id,
-        adapterCreator: channel.guild.voiceAdapterCreator as any,
-    });
+        const resource = createAudioResource(stream.stream, { inputType: stream.type });
+        console.log('AudioResource created:', resource);
 
-    player.play(resource);
-    currentConnection.subscribe(player);
+        if (!currentConnection || currentConnection.state.status === 'disconnected') {
+            console.log('Joining voice channel...');
+            currentConnection = joinVoiceChannel({
+                channelId: channel.id,
+                guildId: channel.guild.id,
+                adapterCreator: channel.guild.voiceAdapterCreator as any,
+            });
+            console.log('Connected to voice channel:', currentConnection.state.status);
+        }
 
-    player.once(AudioPlayerStatus.Idle, async () => {
-        queue.shift();
+        player.play(resource);
+        console.log('Player is playing:', player.state.status);
+        currentConnection.subscribe(player);
+
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp(`🎵 次の音楽を再生中: ${url}`);
+        } else {
+            await interaction.reply(`🎵 次の音楽を再生中: ${url}`);
+        }
+
+        player.on('error', (error) => {
+            console.error('Player error:', error);
+        });
+
+        player.removeAllListeners(AudioPlayerStatus.Idle);
+        player.once(AudioPlayerStatus.Idle, async () => {
+            console.log('音楽が終了しました、次の曲へ進みます。');
+            queue.shift();
+            if (queue.length > 0) {
+                await playNext(interaction, channel);
+            } else {
+                await interaction.followUp('✅ キューは空になりました、ボイスチャンネルから切断します。');
+                currentConnection?.destroy();
+                currentConnection = null;
+            }
+        });
+    } catch (error) {
+        console.error('Error playing music:', error);
+        await interaction.followUp('❌ エラーが発生しました、音楽の再生を試みます。');
+        queue.shift(); // エラーが発生した場合も次の曲へ進める
         if (queue.length > 0) {
             await playNext(interaction, channel);
         } else {
-            await interaction.followUp('キューは空になりました、再生を終了します。');
             currentConnection?.destroy();
             currentConnection = null;
         }
-    });
+    }
 }
