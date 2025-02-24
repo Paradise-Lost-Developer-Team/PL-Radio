@@ -65,3 +65,33 @@ export const deployCommands = async (client: ExtendedClient) => { // client を�
         console.error(error);
     }
 };
+
+(async () => {
+    // コマンドファイルを /commands フォルダから読み込み
+    const commands = [];
+    const commandsPath = path.join(__dirname, 'commands');
+    const commandFolders = fs.readdirSync(commandsPath);
+    for (const folder of commandFolders) {
+        const folderPath = path.join(commandsPath, folder);
+        const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));
+        for (const file of commandFiles) {
+            const filePath = path.join(folderPath, file);
+            const command = require(filePath);
+            if (command.data) {
+                commands.push(command.data.toJSON());
+            }
+        }
+    }
+    
+    const rest = new REST({ version: '9' }).setToken(TOKEN);
+    try {
+        console.log(`Started refreshing ${commands.length} global application (/) commands.`);
+        await rest.put(
+            Routes.applicationCommands(clientId),
+            { body: commands }
+        );
+        console.log(`Successfully reloaded global application (/) commands.`);
+    } catch (error) {
+        console.error(error);
+    }
+})();

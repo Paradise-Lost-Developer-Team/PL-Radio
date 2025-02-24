@@ -164,10 +164,19 @@ client.on(Events.InteractionCreate, async interaction => {
         await command.execute(interaction);
     } catch (error) {
         console.error(error);
+        // 応答済みの場合は followUp を試み、失敗した場合は無視する
         if (interaction.replied || interaction.deferred) {
-            await interaction.followUp({ content: 'コマンド実行時にエラーが発生しました', flags: MessageFlags.Ephemeral });
+            try {
+                await interaction.followUp({ content: 'コマンド実行時にエラーが発生しました', flags: MessageFlags.Ephemeral });
+            } catch (e: any) {
+                if (e.code !== 40060) console.error("FollowUp failed:", e);
+            }
         } else {
-            await interaction.reply({ content: 'コマンド実行時にエラーが発生しました', flags: MessageFlags.Ephemeral });
+            try {
+                await interaction.reply({ content: 'コマンド実行時にエラーが発生しました', flags: MessageFlags.Ephemeral });
+            } catch (e: any) {
+                if (e.code !== 40060) console.error("Reply failed:", e);
+            }
         }
     }
 });
