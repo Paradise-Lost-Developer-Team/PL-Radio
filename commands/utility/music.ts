@@ -171,3 +171,11 @@ module.exports = {
         }
     }
 }
+
+process.on('uncaughtException', (err) => {
+    console.error("予期しないエラーが発生しました。", err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error("Promiseが拒否されました。", reason);
+});
