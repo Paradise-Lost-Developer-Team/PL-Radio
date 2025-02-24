@@ -56,7 +56,13 @@ module.exports = {
     async execute(interaction: any) {
         // 既に応答済みかチェックしてから deferReply を呼ぶ
         if (!interaction.deferred && !interaction.replied) {
-            await interaction.deferReply();
+            try {
+                await interaction.deferReply();
+            } catch (e: any) {
+                // エラーコード 10062 は "Unknown interaction" の場合
+                if (e.code !== 10062) throw e;
+                console.warn("Interaction already unknown, proceeding without deferReply.");
+            }
         }
         
         // placeholder 応答は削除
