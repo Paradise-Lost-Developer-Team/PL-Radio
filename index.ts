@@ -8,6 +8,8 @@ import { DisTube, Queue, Song, Playlist, DisTubeEvents } from "distube";
 import { SpotifyPlugin } from "@distube/spotify";
 import { SoundCloudPlugin } from "@distube/soundcloud";
 import { YtDlpPlugin } from "@distube/yt-dlp";
+import { VoiceStateUpdate } from "./VoiceStateUpdate";
+
 // ExtendedClient の定義をローカルに移動
 export interface ExtendedClient extends Client {
     player: Player;
@@ -133,6 +135,7 @@ const rest = new REST({ version: '9' }).setToken(TOKEN);
 client.once(Events.ClientReady, async () => {
     console.log("起動完了");
     await deployCommands(client); // client を引数として渡す
+    VoiceStateUpdate(client);
     client.user!.setActivity("起動中…", { type: ActivityType.Playing });
     setInterval(async () => {
         const joinServerCount = client.guilds.cache.size;
