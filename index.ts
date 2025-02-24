@@ -68,17 +68,16 @@ const client = new Client({
         `音量: \`${queue.volume}%\` |  フィルタ: \`${queue.filters.names.join(', ') || '非アクティブ'}\` | ループ: \`${queue.repeatMode ? (queue.repeatMode === 2 ? 'キュー' : 'トラック') : 'オフ'}\` | 自動再生: \`${queue.autoplay ? 'オン' : 'オフ'}\``;
 
     client.distube
-    .on('playSong' as keyof DisTubeEvents, (queue: Queue, song: Song) => {
-        if (queue.textChannel) {
+        .on('playSong' as keyof DisTubeEvents, (queue: Queue, song: Song) => {
             if (queue.textChannel) {
-                queue.textChannel.send({
-                    embeds: [new EmbedBuilder().setColor('#a200ff')
-                        .setDescription(`🎶 | 再生中: \`${song.name}\` - \`${song.formattedDuration}\`\nリクエスト者: ${song.user}\n${status(queue)}`)]
-                });
+                if (queue.textChannel) {
+                    queue.textChannel.send({
+                        embeds: [new EmbedBuilder().setColor('#a200ff')
+                            .setDescription(`🎶 | 再生中: \`${song.name}\` - \`${song.formattedDuration}\`\nリクエスト者: ${song.user}\n${status(queue)}`)]
+                    });
+                }
             }
-        }
-    }
-        )
+        })
         .on('addSong' as keyof DisTubeEvents, (queue: Queue, song: Song) => {
             if (queue.textChannel) {
                 if (queue.textChannel) queue.textChannel.send({
@@ -95,11 +94,12 @@ const client = new Client({
                 });
             }
         })
-        .on('error' as keyof DisTubeEvents, (channel: any, e: Error) => {
-            if (channel) {
-                channel.send(`⛔ | エラー: ${e.toString().slice(0, 1974)}`);
+        .on('error' as keyof DisTubeEvents, (error: Error, queue: Queue) => {
+            // Queue に textChannel が存在し、send メソッドが使える場合
+            if (queue && queue.textChannel && typeof queue.textChannel.send === 'function') {
+                queue.textChannel.send(`⛔ | エラー: ${error.toString().slice(0, 1974)}`);
             } else {
-                console.error(e);
+                console.error('エラー:', error);
             }
         })
         .on('empty' as keyof DisTubeEvents, (channel: any) => channel.send({
@@ -109,7 +109,7 @@ const client = new Client({
         .on('searchNoResult' as keyof DisTubeEvents, (message: any, query: any) =>
             message.channel.send({
                 embeds: [new EmbedBuilder().setColor("Red")
-                    .setDescription('`⛔ | 検索結果が見つかりませんでした: \`${query}\`!`')]
+                    .setDescription(`⛔ | 検索結果が見つかりませんでした: \`${query}\`!`)]
             })
         )
         .on('finish' as keyof DisTubeEvents, (queue: Queue) => {
@@ -118,13 +118,6 @@ const client = new Client({
                     embeds: [new EmbedBuilder().setColor('#a200ff')
                         .setDescription('🏁 | キューが終了しました!')]
                 });
-            }
-        })
-        .on('error' as keyof DisTubeEvents, (channel: any, error: Error) => {
-            if (error.message.includes("This video is only available to Music Premium members")) {
-                channel.send("⛔ | この動画はMusic Premiumメンバー専用です。別の動画を選んでください。");
-            } else {
-                channel.send(`⛔ | エラー: ${error.toString().slice(0, 1974)}`);
             }
         });
 
