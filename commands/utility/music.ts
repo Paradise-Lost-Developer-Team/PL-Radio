@@ -83,42 +83,57 @@ module.exports = {
         try {
             switch (subcommand) {
                 case "play":
+                    const queue = await client.distube.getQueue(voiceChannel);
                     // 明示的に fetchedChannel を渡す
                     client.distube.play(voiceChannel, query, { textChannel: fetchedChannel, member });
                     await interaction.editReply({ content: 'リクエストはキューに追加されました。' });
                     break;
                 case "volume":
+                    if (!queue) {
+                        embed.setColor("Red").setDescription("キューは既に空です。");
+                        return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                    }
                     client.distube.setVolume(voiceChannel, volume);
                     await interaction.editReply({ content: `音量を${volume}%に設定しました。` });
                     break;
                 case "options":
-                    const queue = await client.distube.getQueue(voiceChannel);
-                    if (!queue) {
-                        embed.setColor("Red").setDescription("キューが見つかりません。");
-                        return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-                    }
-
                     switch (option) {
                         case "skip":
+                            if (!queue) {
+                                embed.setColor("Red").setDescription("キューは既に空です。");
+                                return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                            }
                             await queue.skip();
                             embed.setColor("Blue").setDescription("⏭️ **トラックがスキップされました**");
                             return interaction.editReply({ embeds: [embed] });
                         case "stop":
+                            if (!queue) {
+                                embed.setColor("Red").setDescription("キューは既に空です。");
+                                return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                            }
                             await queue.stop();
                             embed.setColor("Blue").setDescription("⏹️ **トラックが停止されました**");
                             return interaction.editReply({ embeds: [embed] });
-                        case "pause":
-                            await queue.pause();
-                            embed.setColor("Blue").setDescription("⏸️ **トラックが一時停止されました**");
-                            return interaction.editReply({ embeds: [embed] });
                         case "resume":
+                            if (!queue) {
+                                embed.setColor("Red").setDescription("キューは既に空です。");
+                                return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                            }
                             await queue.resume();
                             embed.setColor("Blue").setDescription("▶️ **トラックが再開されました**");
                             return interaction.editReply({ embeds: [embed] });
                         case "queue":
+                            if (!queue) {
+                                embed.setColor("Red").setDescription("キューは既に空です。");
+                                return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                            }
                             embed.setColor("Blue").setDescription(`キュー: ${queue.songs.map((song, id) => `**${id + 1}**. [${song.name}](${song.url}) - \`${song.formattedDuration}\``).join("\n")}`);
                             return interaction.editReply({ embeds: [embed] });
                         case "loopqueue":
+                            if (!queue) {
+                                embed.setColor("Red").setDescription("キューは既に空です。");
+                                return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                            }
                             if (queue.repeatMode === 2) {
                                 await client.distube.setRepeatMode(interaction, 0);
                                 embed.setColor("Blue").setDescription(`🔂 **トラックはループされていません:** \`キュー\``);
@@ -129,6 +144,10 @@ module.exports = {
                                 return interaction.editReply({ embeds: [embed] });
                             }
                         case "loopall":
+                            if (!queue) {
+                                embed.setColor("Red").setDescription("キューは既に空です。");
+                                return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                            }
                             if (queue.repeatMode === 0) {
                                 await client.distube.setRepeatMode(interaction, 1);
                                 embed.setColor("Blue").setDescription(`🔁 **トラックはループされています:** \`全て\``);
@@ -139,6 +158,10 @@ module.exports = {
                                 return interaction.editReply({ embeds: [embed] });
                             }
                         case "autoplay":
+                            if (!queue) {
+                                embed.setColor("Red").setDescription("キューは既に空です。");
+                                return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                            }
                             if (!queue.autoplay) {
                                 await client.distube.toggleAutoplay(interaction);
                                 embed.setColor("Blue").setDescription(`🔀 **自動再生が有効になりました**`);
@@ -153,6 +176,10 @@ module.exports = {
                             embed.setColor("Blue").setDescription(`🔀 **キューはシャッフルされました**`);
                             return interaction.editReply({ embeds: [embed] });
                         case "filter":
+                            if (!queue) {
+                                embed.setColor("Red").setDescription("キューは既に空です。");
+                                return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                            }
                             const filters = queue.filters.names;
                             if (filters && filters.length > 0) {
                                 embed.setColor("Blue").setDescription(`フィルター: ${filters.join(", ")}`);
