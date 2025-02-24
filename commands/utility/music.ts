@@ -144,6 +144,19 @@ module.exports = {
                                 embed.setColor("Blue").setDescription(`🔀 **自動再生が無効になりました**`);
                                 return interaction.reply({ embeds: [embed] });
                             }
+                        case "shuffle":
+                            await client.distube.shuffle(voiceChannel);
+                            embed.setColor("Blue").setDescription(`🔀 **キューはシャッフルされました**`);
+                            return interaction.reply({ embeds: [embed] });
+                        case "filter":
+                            const filters = queue.filters.names;
+                            if (filters && filters.length > 0) {
+                                embed.setColor("Blue").setDescription(`フィルター: ${filters.join(", ")}`);
+                                return interaction.reply({ embeds: [embed] });
+                            } else {
+                                embed.setColor("Red").setDescription("フィルターが見つかりません。");
+                                return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                            }
                     }
             }
 
