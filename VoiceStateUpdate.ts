@@ -1,30 +1,19 @@
 import { Client, Events } from 'discord.js';
 import { VoiceConnection, VoiceConnectionStatus } from '@discordjs/voice';
+// 代替手段として、voiceClients を VoiceEngine.ts などからインポート
 
 const voiceClients: { [key: string]: VoiceConnection } = {};
 
-interface ExtendedClient extends Client {
-    // Add any additional properties or methods here if needed
-}
-
-export function VoiceStateUpdate(client: ExtendedClient) {
+export function VoiceStateUpdate(client: Client) {
     client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
-        const member = newState.member!;
-        const guildId = member.guild.id;
-        const voiceClient = voiceClients[guildId];
-
-        if (member.user.bot) return;
-
-        if (voiceClient && voiceClient.state.status === VoiceConnectionStatus.Ready) {
-            if (oldState.channel && !newState.channel) {
-                // ユーザーがボイスチャンネルから退出したとき
-                if (voiceClient.joinConfig.channelId === oldState.channel.id) {
-                    // ボイスチャンネルに誰もいなくなったら退室
-                    if (oldState.channel.members.filter(member => !member.user.bot).size === 0) {  // ボイスチャンネルにいるのがBOTだけの場合
-                        voiceClient.disconnect();
-                        delete voiceClients[guildId];
-                    }
-                }
+        const channel = oldState.channel ?? newState.channel;
+        if (channel && channel.members.filter(member => !member.user.bot).size === 0) {
+            const guildId = channel.guild.id;
+            const voiceClient = voiceClients[guildId];
+            if (voiceClient && voiceClient.state.status === VoiceConnectionStatus.Ready) {
+                console.log(`Guild ${guildId}: Bot only remains in channel, disconnecting.`);
+                voiceClient.disconnect();
+                delete voiceClients[guildId];
             }
         }
     });
