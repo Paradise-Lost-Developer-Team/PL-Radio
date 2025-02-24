@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { EmbedBuilder, VoiceChannel, MessageFlags, TextChannel } from "discord.js";
+import { EmbedBuilder, MessageFlags } from "discord.js";
 import { ExtendedClient } from "../../index";
 
 module.exports = {
@@ -59,13 +59,14 @@ module.exports = {
             try {
                 await interaction.deferReply();
             } catch (e: any) {
-                // エラーコード 10062 は "Unknown interaction" の場合
-                if (e.code !== 10062) throw e;
-                console.warn("Interaction already unknown, proceeding without deferReply.");
+                // エラーコード 10062 または 40060 ("Interaction has already been acknowledged")
+                if (e.code === 10062 || e.code === 40060) {
+                    console.warn("Interaction already acknowledged; proceeding.");
+                } else {
+                    throw e;
+                }
             }
         }
-        
-        // placeholder 応答は削除
 
         const { options, member, guild } = interaction;
         const subcommand = options.getSubcommand();
@@ -102,6 +103,7 @@ module.exports = {
                     }
                 }
                 case "volume": {
+                    // ギルドごとのキューを取得
                     const queue = client.distube.getQueue(guild);
                     if (!queue) {
                         embed.setColor("Red").setDescription("キューは既に空です。");
@@ -111,11 +113,13 @@ module.exports = {
                     return interaction.followUp({ content: `音量を${volume}%に設定しました。` });
                 }
                 case "options": {
+                    // ギルドごとのキューを取得
                     const queue = client.distube.getQueue(guild);
                     if (!queue) {
                         embed.setColor("Red").setDescription("キューは既に空です。");
                         return interaction.followUp({ embeds: [embed], flags: MessageFlags.Ephemeral });
                     }
+                    // オプション処理はそのままでOK
                     switch (option) {
                         case "skip": {
                             await queue.skip();
@@ -199,10 +203,3 @@ module.exports = {
         }
     }
 };
-process.on('uncaughtException', (err) => {
-    console.error("予期しないエラーが発生しました。", err);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error("Promiseが拒否されました。", reason);
-});

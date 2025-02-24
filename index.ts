@@ -156,7 +156,7 @@ client.once(Events.ClientReady, async () => {
     });
 });
 
-client.on(Events.InteractionCreate, async interaction => {    
+client.on(Events.InteractionCreate, async interaction => {
     if (!interaction.isChatInputCommand()) return;
     const command = client.commands.get(interaction.commandName);
     if (!command) return;
@@ -164,25 +164,23 @@ client.on(Events.InteractionCreate, async interaction => {
         await command.execute(interaction);
     } catch (error) {
         console.error(error);
-        // 応答済みの場合は followUp を試み、失敗した場合は無視する
+        // If the interaction has already been acknowledged, try to follow up, otherwise replyen acknowledged, try to follow up, otherwise reply
         if (interaction.replied || interaction.deferred) {
             try {
                 await interaction.followUp({ content: 'コマンド実行時にエラーが発生しました', flags: MessageFlags.Ephemeral });
             } catch (e: any) {
-                if (e.code !== 40060) console.error("FollowUp failed:", e);
+                if (e.code === 10062) return; // Unknown interaction error, nothing more to do nothing more to do
+                if (e.code !== 40060) console.error("FollowUp failed:", e);   if (e.code !== 40060) console.error("FollowUp failed:", e);
             }
         } else {
             try {
                 await interaction.reply({ content: 'コマンド実行時にエラーが発生しました', flags: MessageFlags.Ephemeral });
             } catch (e: any) {
-                if (e.code !== 40060) console.error("Reply failed:", e);
+                if (e.code === 10062) return; // Unknown interaction error, nothing more to do   if (e.code === 10062) return; // Unknown interaction error, nothing more to do
+                if (e.code !== 40060) console.error("Reply failed:", e);       if (e.code !== 40060) console.error("Reply failed:", e);
             }
         }
     }
-});
-
-process.on('uncaughtException', (err) => {
-    console.error("予期しないエラーが発生しました。", err);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
