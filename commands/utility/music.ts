@@ -59,7 +59,7 @@ module.exports = {
         const { options, member, guild, channel } = interaction;
 
         const subcommand = options.getSubcommand();
-        const query = options.getString("queue");
+        const query = options.getString("query");
         const volume = options.getNumber("percentage");
         const option = options.getString("option");
         const voiceChannel = member.voice.channel as VoiceChannel;
@@ -143,6 +143,19 @@ module.exports = {
                                 await client.distube.toggleAutoplay(interaction);
                                 embed.setColor("Blue").setDescription(`🔀 **自動再生が無効になりました**`);
                                 return interaction.reply({ embeds: [embed] });
+                            }
+                        case "shuffle":
+                            await client.distube.shuffle(voiceChannel);
+                            embed.setColor("Blue").setDescription(`🔀 **キューはシャッフルされました**`);
+                            return interaction.reply({ embeds: [embed] });
+                        case "filter":
+                            const filters = queue.filters.names;
+                            if (filters && filters.length > 0) {
+                                embed.setColor("Blue").setDescription(`フィルター: ${filters.join(", ")}`);
+                                return interaction.reply({ embeds: [embed] });
+                            } else {
+                                embed.setColor("Red").setDescription("フィルターが見つかりません。");
+                                return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                             }
                     }
             }
