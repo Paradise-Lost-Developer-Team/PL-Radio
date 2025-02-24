@@ -54,38 +54,44 @@ module.exports = {
                     )
                 ),
     async execute(interaction: any) {
-        // deferReply により応答期限切れを防止
-        await interaction.deferReply({  });
-
+        await interaction.deferReply();
         const { options, member, guild } = interaction;
-        // 明示的にテキストチャンネルを fetch して取得
-        const fetchedChannel = await guild.channels.fetch(interaction.channel.id) as TextChannel;
         const subcommand = options.getSubcommand();
         const query = options.getString("query");
         const volume = options.getNumber("percentage");
         const option = options.getString("option");
-        const voiceChannel = member.voice.channel as VoiceChannel;
+        const voiceChannel = member.voice.channel;
         const client = interaction.client as ExtendedClient;
-
         const embed = new EmbedBuilder();
 
         if (!voiceChannel) {
             embed.setColor("Red").setDescription("ボイスチャンネルに参加してください。");
-            return interaction.editReply({ embeds: [embed] });
+            return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+        }
+        // 追加: ボイスチャンネルに接続可能な状態か確認
+        if (!voiceChannel.joinable) {
+            embed.setColor("Red").setDescription("このボイスチャンネルには接続できません。");
+            return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
         // すでに接続済みの場合のチェック
         if (guild.members.me.voice.channelId && guild.members.me.voice.channelId !== member.voice.channelId) {
             embed.setColor("Red").setDescription(`音楽システムは既に<#${guild.members.me.voice.channelId}>でアクティブです。`);
-            return interaction.editReply({ embeds: [embed] });
+            return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
         try {
             switch (subcommand) {
                 case "play": {
-                    // play はキュー生成用のため queue チェックは不要
-                    client.distube.play(voiceChannel, query, { textChannel: fetchedChannel, member });
-                    await interaction.editReply({ content: 'リクエストはキューに追加されました。' });
+                    try {
+                        // await を追加して play 呼び出しのエラー捕捉
+                        await client.distube.play(voiceChannel, query, { textChannel: interaction.channel, member });
+                        await interaction.editReply({ content: 'リクエストはキューに追加されました。' });
+                    } catch (error) {
+                        console.error(error);
+                        embed.setColor("Red").setDescription("曲再生中に接続エラーが発生しました。");
+                        return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                    }
                     break;
                 }
                 case "volume": {
@@ -184,11 +190,14 @@ module.exports = {
         } catch (error) {
             console.error(error);
             embed.setColor("Red").setDescription("エラーが発生しました。");
-            return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            if (interaction.replied || interaction.deferred) {
+                await interaction.followUp({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            } else {
+                await interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            }
         }
     }
 };
-
 process.on('uncaughtException', (err) => {
     console.error("予期しないエラーが発生しました。", err);
 });

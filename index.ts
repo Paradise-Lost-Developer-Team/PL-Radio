@@ -94,8 +94,21 @@ const client = new Client({
                 });
             }
         })
-        .on('error' as keyof DisTubeEvents, (error: Error, queue: Queue) => {
-            // Queue に textChannel が存在し、send メソッドが使える場合
+        .on('error' as keyof DisTubeEvents, (channelOrError: any, errorOrQueue: any) => {
+            // エラーイベントのパラメータ順が異なる場合に備え、両方のパターンをチェック
+            let error: Error;
+            let queue: any;
+            if (errorOrQueue instanceof Error) {
+                error = errorOrQueue;
+                queue = channelOrError;
+            } else {
+                error = channelOrError;
+                queue = errorOrQueue;
+            }
+            // VOICE_CONNECT_FAILED エラーなら追加ログ等
+            if (error.message.includes("VOICE_CONNECT_FAILED")) {
+                console.error("ボイスチャンネルへの接続に失敗しました:", error);
+            }
             if (queue && queue.textChannel && typeof queue.textChannel.send === 'function') {
                 queue.textChannel.send(`⛔ | エラー: ${error.toString().slice(0, 1974)}`);
             } else {
