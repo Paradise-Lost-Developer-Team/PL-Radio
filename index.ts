@@ -32,6 +32,7 @@ class DisTubeClient extends Client<true> {
     distube: DisTube;
     constructor(options: any) {
         super(options);
+        // 修正: グローバル変数 client ではなく this を渡す
         this.distube = new DisTube(this, {
             plugins: [
                 new SpotifyPlugin(),

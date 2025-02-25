@@ -53,18 +53,15 @@ module.exports = {
                         )
                     )
                 ),
-    async execute(interaction: any, client: ExtendedClient) {
+    async execute(interaction: any) { // 第二引数削除
         await interaction.deferReply();
-        // 既に応答済みかチェックしてから deferReply を呼ぶ
-        if (!interaction.deferred && !interaction.replied) {
-
         const { options, member, guild } = interaction;
         const subcommand = options.getSubcommand();
-        const query = options.getString("queue");
+        const query = options.getString("query");
         const volume = options.getNumber("percentage");
         const option = options.getString("option");
         const voiceChannel = member.voice.channel;
-
+        const client = interaction.client as ExtendedClient; // 追加：client を取得
         const embed = new EmbedBuilder();
         
         if (!voiceChannel) {
@@ -193,4 +190,4 @@ module.exports = {
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
     }
-}};
+};
