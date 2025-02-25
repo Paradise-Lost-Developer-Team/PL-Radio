@@ -1,15 +1,26 @@
-import { Client, Events, GatewayIntentBits, ActivityType, MessageFlags, Collection, EmbedBuilder } from "discord.js";
+import { Client, Events, GatewayIntentBits, ActivityType, MessageFlags, Collection, EmbedBuilder, TextChannel, ChatInputApplicationCommandData, ChatInputCommandInteraction, GuildTextBasedChannel } from "discord.js";
 import { deployCommands } from "./deploy-commands";
 import { Player } from "discord-player";
 import { REST } from "@discordjs/rest";
 import { TOKEN } from "./config.json";
 import { ServerStatus } from "./dictionaries";
-import { DisTube, Queue, Song, Playlist, DisTubeEvents } from "distube";
+import { DisTube, Queue, Song, Playlist } from "distube";
+import type { Awaitable, DisTubeEvents } from "distube";
 import { SpotifyPlugin } from "@distube/spotify";
 import { SoundCloudPlugin } from "@distube/soundcloud";
-import { YtDlpPlugin } from "@distube/yt-dlp";
+import { YouTubePlugin } from "@distube/youtube";
+import { DeezerPlugin } from "@distube/deezer";
+import { DirectLinkPlugin } from "@distube/direct-link";
+import { FilePlugin } from "@distube/file";
 import { VoiceStateUpdate } from "./VoiceStateUpdate";
 
+export const followup = async (interaction: ChatInputCommandInteraction, embed: EmbedBuilder, textChannel: GuildTextBasedChannel): Promise<Awaitable<any>> => {
+    if (Date.now() - interaction.createdTimestamp < 15 * 60 * 1000) {
+        await interaction.followUp({ embeds: [embed] });
+    } else { 
+        await textChannel.send({ embeds: [embed] });
+    }
+}
 // ExtendedClient の定義をローカルに移動
 export interface ExtendedClient extends Client {
     player: Player;
@@ -17,46 +28,56 @@ export interface ExtendedClient extends Client {
     distube: DisTube;
 }
 
-const client = new Client({
+class DisTubeClient extends Client<true> {
+    distube: DisTube;
+    constructor(options: any) {
+        super(options);
+        this.distube = new DisTube(this, {
+            plugins: [
+                new SpotifyPlugin(),
+                new SoundCloudPlugin(),
+                new YouTubePlugin(),
+                new DeezerPlugin(),
+                new DirectLinkPlugin(),
+                new FilePlugin(),
+            ],
+            emitAddListWhenCreatingQueue: true,
+            emitAddSongWhenCreatingQueue: true,
+            emitNewSongOnly: true,
+            savePreviousSongs: true,
+            nsfw: true,
+            joinNewVoiceChannel: true,
+            customFilters: {
+                "8D": "apulsator=hz=0.08",
+                "gate": "agate",
+                "haas": "haas",
+                "reverse": "areverse",
+                "flanger": "flanger",
+                "subboost": "asubboost",
+                "vaporwave": "aresample=48000,asetrate=48000*0.8",
+                "nightcore": "aresample=48000,asetrate=48000*1.25",
+                "phaser": "aphaser",
+                "tremolo": "tremolo",
+                "vibrato": "vibrato=f=6.5",
+                "treble": "treble=g=5",
+                "normalizer": "dynaudnorm=f=200",
+                "surrounding": "surround",
+                "pulsator": "apulsator=hz=1",
+                "karaoke": "stereotools=mlev=0.03",
+                "mcompand": "mcompand"
+            },
+        });
+    }
+}
+
+const client = new DisTubeClient({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildVoiceStates
+        GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.MessageContent
     ],
-}) as ExtendedClient;
-
-client.distube = new DisTube(client, {
-    plugins: [
-        new SpotifyPlugin(),
-        new SoundCloudPlugin(),
-        new YtDlpPlugin(),
-    ],
-    customFilters: {
-        "8D": "apulsator=hz=0.08",
-        "gate": "agate",
-        "haas": "haas",
-        "reverse": "areverse",
-        "flanger": "flanger",
-        "subboost": "asubboost",
-        "vaporwave": "aresample=48000,asetrate=48000*0.8",
-        "nightcore": "aresample=48000,asetrate=48000*1.25",
-        "phaser": "aphaser",
-        "tremolo": "tremolo",
-        "vibrato": "vibrato=f=6.5",
-        "treble": "treble=g=5",
-        "normalizer": "dynaudnorm=f=200",
-        "surrounding": "surround",
-        "pulsator": "apulsator=hz=1",
-        "karaoke": "stereotools=mlev=0.03",
-        "mcompand": "mcompand"
-    },
-    emitNewSongOnly: true,
-    savePreviousSongs: true,
-    nsfw: true,
-    emitAddListWhenCreatingQueue: false,
-    emitAddSongWhenCreatingQueue: false,
-    joinNewVoiceChannel: true,
-});
+}) as unknown as ExtendedClient;
 
 const status = (queue: any) =>
     `音量: \`${queue.volume}%\` |  フィルタ: \`${queue.filters.names.join(', ') || '非アクティブ'}\` | 
