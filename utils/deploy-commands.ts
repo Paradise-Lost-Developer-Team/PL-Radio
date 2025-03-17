@@ -1,7 +1,7 @@
 import { Routes } from 'discord-api-types/v9';
 import { REST } from '@discordjs/rest';
-import { ExtendedClient } from './index'; // client をインポート
-import { clientId, TOKEN } from './config.json';
+import { ExtendedClient } from '../index'; // client をインポート
+import { clientId, TOKEN } from '../config.json';
 import fs from 'node:fs';
 import path from 'node:path';
 
