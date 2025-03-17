@@ -10,7 +10,7 @@ console.log("Starting deploy-commands.ts");
 export const deployCommands = async (client: ExtendedClient) => { // client を引数として受け取る
     const commands: any[] = [];
     // Grab all the command folders from the commands directory you created earlier
-    const foldersPath = path.join(__dirname, 'commands');
+    const foldersPath = path.join(__dirname, '..', 'commands');
     console.log(`foldersPath: ${foldersPath}`);
     const commandFolders = fs.readdirSync(foldersPath);
     console.log(`commandFolders: ${commandFolders}`);
@@ -69,18 +69,31 @@ export const deployCommands = async (client: ExtendedClient) => { // client を�
 (async () => {
     // コマンドファイルを /commands フォルダから読み込み
     const commands = [];
-    const commandsPath = path.join(__dirname, 'commands');
-    const commandFolders = fs.readdirSync(commandsPath);
-    for (const folder of commandFolders) {
-        const folderPath = path.join(commandsPath, folder);
-        const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));
-        for (const file of commandFiles) {
-            const filePath = path.join(folderPath, file);
-            const command = require(filePath);
-            if (command.data) {
-                commands.push(command.data.toJSON());
+    const commandsPath = path.join(__dirname, '..', 'build', 'js', 'commands');
+
+    // ディレクトリが存在しない場合は作成
+    if (!fs.existsSync(commandsPath)) {
+        fs.mkdirSync(commandsPath, { recursive: true });
+        console.log(`ディレクトリを作成しました: ${commandsPath}`);
+    }
+
+    try {
+        // ディレクトリ内のファイルを読み取る
+        const commandFolders = fs.readdirSync(commandsPath);
+        for (const folder of commandFolders) {
+            const folderPath = path.join(commandsPath, folder);
+            const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));
+            for (const file of commandFiles) {
+                const filePath = path.join(folderPath, file);
+                const command = require(filePath);
+                if (command.data) {
+                    commands.push(command.data.toJSON());
+                }
             }
         }
+    } catch (error) {
+        console.error(`コマンドディレクトリの読み込みに失敗しました: ${error instanceof Error ? error.message : String(error)}`);
+        console.log('コマンドが見つからない場合は、先にビルドを実行してください。');
     }
     
     const rest = new REST({ version: '9' }).setToken(TOKEN);
