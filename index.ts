@@ -1,9 +1,9 @@
 import { Client, Events, GatewayIntentBits, ActivityType, MessageFlags, Collection, EmbedBuilder, TextChannel, ChatInputApplicationCommandData, ChatInputCommandInteraction, GuildTextBasedChannel } from "discord.js";
-import { deployCommands } from "./deploy-commands";
+import { deployCommands } from "./utils/deploy-commands";
 import { Player } from "discord-player";
 import { REST } from "@discordjs/rest";
 import { TOKEN } from "./config.json";
-import { ServerStatus } from "./dictionaries";
+import { ServerStatus } from "./utils/dictionaries";
 import { DisTube, Queue, Song, Playlist } from "distube";
 import type { Awaitable, DisTubeEvents } from "distube";
 import { SpotifyPlugin } from "@distube/spotify";
@@ -12,7 +12,7 @@ import { YouTubePlugin } from "@distube/youtube";
 import { DeezerPlugin } from "@distube/deezer";
 import { DirectLinkPlugin } from "@distube/direct-link";
 import { FilePlugin } from "@distube/file";
-import { VoiceStateUpdate } from "./VoiceStateUpdate";
+import { VoiceStateUpdate } from "./utils/VoiceStateUpdate";
 
 export const followup = async (interaction: ChatInputCommandInteraction, embed: EmbedBuilder, textChannel: GuildTextBasedChannel): Promise<Awaitable<any>> => {
     if (Date.now() - interaction.createdTimestamp < 15 * 60 * 1000) {

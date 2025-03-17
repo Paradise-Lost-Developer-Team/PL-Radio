@@ -1,6 +1,6 @@
 import { Events } from 'discord.js';
 import { VoiceConnection, VoiceConnectionStatus } from '@discordjs/voice';
-import { ExtendedClient } from './index';
+import { ExtendedClient } from '../index';
 // 代替手段として、voiceClients を VoiceEngine.ts などからインポート
 
 export const voiceClients: Record<string, VoiceConnection> = {};
