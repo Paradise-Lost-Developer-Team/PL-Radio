@@ -94,12 +94,3 @@ export const deployCommands = async (client: ExtendedClient) => {
     const commands = await loadCommands(path.join(__dirname, '..', 'commands'), client);
     await registerCommands(commands);
 };
-
-// スクリプト直接実行用（npx ts-node utils/deploy-commands.ts などで実行）
-if (require.main === module) {
-    (async () => {
-        // ビルド済みファイルからコマンドを読み込む
-        const commands = await loadCommands(path.join(__dirname, '..', 'build', 'js', 'commands'));
-        await registerCommands(commands);
-    })();
-}
