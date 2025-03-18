@@ -1,110 +1,105 @@
 import { Routes } from 'discord-api-types/v9';
 import { REST } from '@discordjs/rest';
-import { ExtendedClient } from '../index'; // client をインポート
+import { ExtendedClient } from '../index';
 import { clientId, TOKEN } from '../config.json';
 import fs from 'node:fs';
 import path from 'node:path';
 
 console.log("Starting deploy-commands.ts");
 
-export const deployCommands = async (client: ExtendedClient) => { // client を引数として受け取る
+// コマンドを読み込む共通関数
+const loadCommands = async (sourcePath: string, client?: ExtendedClient) => {
+    console.log(`コマンドを読み込み中: ${sourcePath}`);
     const commands: any[] = [];
-    // Grab all the command folders from the commands directory you created earlier
-    const foldersPath = path.join(__dirname, '..', 'commands');
-    console.log(`foldersPath: ${foldersPath}`);
-    const commandFolders = fs.readdirSync(foldersPath);
-    console.log(`commandFolders: ${commandFolders}`);
-
-    for (const folder of commandFolders) {
-        // Grab all the command files from the commands directory you created earlier
-        const commandsPath = path.join(foldersPath, folder);
-        console.log(`commandsPath: ${commandsPath}`);
-        const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js') || file.endsWith('.ts')); 
-        console.log(`commandFiles: ${commandFiles}`);
-        // Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment
-        for (const file of commandFiles) {
-            const filePath = path.join(commandsPath, file);
-            console.log(`filePath: ${filePath}`);
-            try {
-                
-                console.log(`Trying to load command: ${filePath}`);
-                const command = require(filePath);
-                if ('data' in command && 'execute' in command) {
-                    client.commands.set(command.data.name, command); // ✅ コマンドを登録
-                }
-                console.log(`Successfully loaded: ${filePath}`);
-                if ('data' in command && 'execute' in command) {
-                    commands.push(command.data.toJSON());
-                    console.log(`Loaded command: ${command.data.name}`);
-                } else {
-                    console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
-                }
-            } catch (error) {
-                console.error(`Error loading command at ${filePath}:`, error);
-            }
-            
-        }
-    }
-
-    const rest = new REST({ version: '9' }).setToken(TOKEN);
-
-// and deploy your commands!
-    try {
-        console.log(`${commands.length}個のアプリケーション (/) コマンドの更新を開始しました。`);
-
-        // The put method is used to fully refresh all commands in the guild with the current set
-        const data: any = await rest.put(
-            // Routes.applicationGuildCommands(clientId, guildId),
-            Routes.applicationCommands(clientId),
-            { body: commands },
-        );
-
-        console.log(`${data.length}個のアプリケーション（/）コマンドを同期しました。`);
-    } catch (error) {
-        // And of course, make sure you catch and log any errors!
-        console.error(error);
-    }
-};
-
-(async () => {
-    // コマンドファイルを /commands フォルダから読み込み
-    const commands = [];
-    const commandsPath = path.join(__dirname, '..', 'build', 'js', 'commands');
-
+    
     // ディレクトリが存在しない場合は作成
-    if (!fs.existsSync(commandsPath)) {
-        fs.mkdirSync(commandsPath, { recursive: true });
-        console.log(`ディレクトリを作成しました: ${commandsPath}`);
+    if (!fs.existsSync(sourcePath)) {
+        fs.mkdirSync(sourcePath, { recursive: true });
+        console.log(`ディレクトリを作成しました: ${sourcePath}`);
+        return commands; // ディレクトリが新しく作成された場合は空の配列を返す
     }
-
+    
     try {
-        // ディレクトリ内のファイルを読み取る
-        const commandFolders = fs.readdirSync(commandsPath);
+        const commandFolders = fs.readdirSync(sourcePath);
+        console.log(`フォルダ一覧: ${commandFolders}`);
+        
         for (const folder of commandFolders) {
-            const folderPath = path.join(commandsPath, folder);
-            const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));
+            const folderPath = path.join(sourcePath, folder);
+            
+            // ディレクトリかどうか確認
+            if (!fs.statSync(folderPath).isDirectory()) continue;
+            
+            const commandFiles = fs.readdirSync(folderPath).filter(file => 
+                file.endsWith('.js') || file.endsWith('.ts')
+            );
+            
             for (const file of commandFiles) {
                 const filePath = path.join(folderPath, file);
-                const command = require(filePath);
-                if (command.data) {
-                    commands.push(command.data.toJSON());
+                console.log(`コマンドを読み込み: ${filePath}`);
+                
+                try {
+                    const command = require(filePath);
+                    
+                    // クライアントが指定されていて、コマンドが有効な場合はクライアントに登録
+                    if (client && 'data' in command && 'execute' in command) {
+                        client.commands.set(command.data.name, command);
+                        console.log(`クライアントにコマンドを登録: ${command.data.name}`);
+                    }
+                    
+                    // コマンドデータがある場合は配列に追加
+                    if ('data' in command) {
+                        commands.push(command.data.toJSON());
+                        console.log(`コマンドをデプロイリストに追加: ${command.data.name}`);
+                    } else {
+                        console.log(`[WARNING] コマンド ${filePath} には必要な "data" プロパティがありません。`);
+                    }
+                } catch (error) {
+                    console.error(`コマンド読み込みエラー ${filePath}:`, error);
                 }
             }
         }
     } catch (error) {
         console.error(`コマンドディレクトリの読み込みに失敗しました: ${error instanceof Error ? error.message : String(error)}`);
-        console.log('コマンドが見つからない場合は、先にビルドを実行してください。');
+    }
+    
+    return commands;
+};
+
+// API経由でコマンドを登録する関数
+const registerCommands = async (commands: any[]) => {
+    if (commands.length === 0) {
+        console.log('登録するコマンドがありません');
+        return;
     }
     
     const rest = new REST({ version: '9' }).setToken(TOKEN);
+    
     try {
-        console.log(`Started refreshing ${commands.length} global application (/) commands.`);
-        await rest.put(
+        console.log(`${commands.length}個のアプリケーション (/) コマンドの更新を開始しました。`);
+        
+        const data: any = await rest.put(
             Routes.applicationCommands(clientId),
-            { body: commands }
+            { body: commands },
         );
-        console.log(`Successfully reloaded global application (/) commands.`);
+        
+        console.log(`${data.length}個のアプリケーション（/）コマンドを同期しました。`);
     } catch (error) {
-        console.error(error);
+        console.error('コマンド登録エラー:', error);
     }
-})();
+};
+
+// クライアントからの実行用関数（インポート先から呼び出される）
+export const deployCommands = async (client: ExtendedClient) => {
+    // 開発環境のソースコードからコマンドを読み込む
+    const commands = await loadCommands(path.join(__dirname, '..', 'commands'), client);
+    await registerCommands(commands);
+};
+
+// スクリプト直接実行用（npx ts-node utils/deploy-commands.ts などで実行）
+if (require.main === module) {
+    (async () => {
+        // ビルド済みファイルからコマンドを読み込む
+        const commands = await loadCommands(path.join(__dirname, '..', 'build', 'js', 'commands'));
+        await registerCommands(commands);
+    })();
+}
