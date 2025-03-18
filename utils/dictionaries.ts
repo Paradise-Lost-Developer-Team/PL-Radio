@@ -9,7 +9,6 @@ export class ServerStatus {
 
     async saveTask() {
         while (true) {
-            console.log(`Saving guild id: ${this.guildId}`);
             try {
                 fs.writeFileSync('guild_id.txt', this.guildId); // guild_id をファイルに保存
                 await new Promise(resolve => setTimeout(resolve, 60000)); // 60秒ごとに保存
