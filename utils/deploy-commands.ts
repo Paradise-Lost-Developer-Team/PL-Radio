@@ -5,7 +5,7 @@ import { clientId, TOKEN } from '../config.json';
 import fs from 'node:fs';
 import path from 'node:path';
 
-console.log("Starting deploy-commands.ts");
+console.log("deploy-commands.tsを開始します");
 
 // コマンドを読み込む共通関数
 const loadCommands = async (sourcePath: string, client?: ExtendedClient) => {
