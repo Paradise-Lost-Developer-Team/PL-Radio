@@ -133,14 +133,14 @@ module.exports = {
                                 client.distube.setRepeatMode(interaction, 0);
                                 embed.setColor("Blue").setDescription(`🔂 **トラックはループされていません:** \`キュー\``);
                             } else {
-                                client.distube.setRepeatMode(interaction, 2);
+                                client.distube.setRepeatMode(interaction, 1);
                                 embed.setColor("Blue").setDescription(`🔂 **トラックはループされています:** \`キュー\``);
                             }
                             return interaction.editReply({ embeds: [embed] });
                         }
                         case "loopall": {
                             if (queue.repeatMode === 0) {
-                                client.distube.setRepeatMode(interaction, 1);
+                                client.distube.setRepeatMode(interaction, 2);
                                 embed.setColor("Blue").setDescription(`🔁 **トラックはループされています:** \`全て\``);
                             } else {
                                 client.distube.setRepeatMode(interaction, 0);

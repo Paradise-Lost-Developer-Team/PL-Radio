@@ -91,6 +91,30 @@ class HelpMenu {
     }
 }
 
+// インタラクションからHelpMenuを復元するための関数
+function createMenuFromInteraction(interaction: ButtonInteraction): HelpMenu {
+    const helpMenu = new HelpMenu();
+    
+    // メッセージの埋め込みからページ番号を取得
+    if (interaction.message.embeds.length > 0) {
+        const footerText = interaction.message.embeds[0].footer?.text || '';
+        const match = footerText.match(/ページ (\d+)\/\d+/);
+        if (match && match[1]) {
+            const pageNumber = parseInt(match[1], 10) - 1; // 0-indexedに変換
+            
+            // ページ番号を設定（範囲内であることを確認）
+            if (pageNumber >= 0 && pageNumber < helpMenu.getTotalPages()) {
+                // 現在のページまで移動
+                while (helpMenu.getCurrentPageNumber() !== pageNumber) {
+                    helpMenu.nextPage();
+                }
+            }
+        }
+    }
+    
+    return helpMenu;
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('help')
@@ -117,5 +141,7 @@ module.exports = {
             embeds: [helpEmbed],
             components: [actionRow]
         });
-    }
+    },
+    // HelpMenuを作成する関数をエクスポート
+    createMenuFromInteraction
 };

@@ -176,27 +176,78 @@ client.once(Events.ClientReady, async () => {
 });
 
 client.on(Events.InteractionCreate, async interaction => {
-    if (!interaction.isChatInputCommand()) return;
-    const command = client.commands.get(interaction.commandName);
-    if (!command) return;
-    try {
-        await command.execute(interaction);
-    } catch (error) {
-        console.error(error);
-        // If the interaction has already been acknowledged, try to follow up, otherwise replyen acknowledged, try to follow up, otherwise reply
-        if (interaction.replied || interaction.deferred) {
-            try {
-                await interaction.followUp({ content: 'コマンド実行時にエラーが発生しました', flags: MessageFlags.Ephemeral });
-            } catch (e: any) {
-                if (e.code === 10062) return; // Unknown interaction error, nothing more to do nothing more to do
-                if (e.code !== 40060) console.error("FollowUp failed:", e);   if (e.code !== 40060) console.error("FollowUp failed:", e);
+    // コマンドインタラクションの処理
+    if (interaction.isChatInputCommand()) {
+        const command = client.commands.get(interaction.commandName);
+        if (!command) return;
+        try {
+            await command.execute(interaction);
+        } catch (error) {
+            console.error(error);
+            // If the interaction has already been acknowledged, try to follow up, otherwise reply
+            if (interaction.replied || interaction.deferred) {
+                try {
+                    await interaction.followUp({ content: 'コマンド実行時にエラーが発生しました', flags: MessageFlags.Ephemeral });
+                } catch (e: any) {
+                    if (e.code === 10062) return; // Unknown interaction error, nothing more to do
+                    if (e.code !== 40060) console.error("FollowUp failed:", e);
+                }
+            } else {
+                try {
+                    await interaction.reply({ content: 'コマンド実行時にエラーが発生しました', flags: MessageFlags.Ephemeral });
+                } catch (e: any) {
+                    if (e.code === 10062) return; // Unknown interaction error, nothing more to do
+                    if (e.code !== 40060) console.error("Reply failed:", e);
+                }
             }
-        } else {
+        }
+        return;
+    }
+
+    // ボタンインタラクションの処理
+    if (interaction.isButton()) {
+        try {
+            // helpコマンドのページ切り替えボタンの処理
+            if (interaction.customId === 'previous' || interaction.customId === 'next') {
+                // コマンドのファイルをインポート
+                const helpCommand = require('./commands/utility/help');
+                
+                // 元のメッセージから埋め込みを取得してHelpMenuインスタンスを作成
+                const helpMenu = helpCommand.createMenuFromInteraction(interaction);
+                
+                // ボタンに応じてページを変更
+                if (interaction.customId === 'next') {
+                    helpMenu.nextPage();
+                } else {
+                    helpMenu.previousPage();
+                }
+                
+                // 更新されたページの埋め込みとボタンで応答
+                const updatedEmbed = helpMenu.getCurrentPage();
+                const actionRow = new ActionRowBuilder<ButtonBuilder>()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setCustomId('previous')
+                            .setLabel('前のページ')
+                            .setStyle(ButtonStyle.Primary),
+                        new ButtonBuilder()
+                            .setCustomId('next')
+                            .setLabel('次のページ')
+                            .setStyle(ButtonStyle.Primary)
+                    );
+                
+                await interaction.update({
+                    content: updatedEmbed.data.description ?? '',
+                    embeds: [updatedEmbed],
+                    components: [actionRow]
+                });
+            }
+        } catch (error) {
+            console.error('ボタンインタラクションの処理中にエラーが発生しました:', error);
             try {
-                await interaction.reply({ content: 'コマンド実行時にエラーが発生しました', flags: MessageFlags.Ephemeral });
-            } catch (e: any) {
-                if (e.code === 10062) return; // Unknown interaction error, nothing more to do   if (e.code === 10062) return; // Unknown interaction error, nothing more to do
-                if (e.code !== 40060) console.error("Reply failed:", e);       if (e.code !== 40060) console.error("Reply failed:", e);
+                await interaction.reply({ content: 'ボタン操作中にエラーが発生しました', ephemeral: true });
+            } catch (e) {
+                console.error('エラー応答の送信に失敗しました:', e);
             }
         }
     }
