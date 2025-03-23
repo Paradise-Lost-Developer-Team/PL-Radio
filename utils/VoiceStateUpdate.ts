@@ -1,9 +1,7 @@
 import { Events } from 'discord.js';
 import { VoiceConnection, VoiceConnectionStatus } from '@discordjs/voice';
 import { ExtendedClient } from '../index';
-// 代替手段として、voiceClients を VoiceEngine.ts などからインポート
-
-export const voiceClients: Record<string, VoiceConnection> = {};
+import { voiceClients } from './TTS-Engine';
 
 export function VoiceStateUpdate(client: ExtendedClient) {
     client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
