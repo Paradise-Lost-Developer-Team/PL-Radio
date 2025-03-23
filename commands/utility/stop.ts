@@ -1,27 +1,27 @@
-import { Client, CommandInteraction, GuildMember } from 'discord.js';
-import { getVoiceConnection } from '@discordjs/voice';
+import { SlashCommandBuilder } from '@discordjs/builders';
+import { CommandInteraction, MessageFlags } from 'discord.js';
+import { voiceClients } from '../../utils/TTS-Engine'; // Adjust the path as necessary
 
-const stopCommand = {
-    name: 'stop',
-    description: 'ボイスチャンネルから切断するコマンドです',
-    run: async (client: Client, interaction: CommandInteraction) => {
-        if (!interaction.guild) {
-            return interaction.reply('このコマンドはサーバー内でのみ使用できます。');
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('leave')
+        .setDescription('BOTをチャンネルから退出します'),
+    async execute(interaction: CommandInteraction) {
+        const guildId = interaction.guildId!;
+        const voiceClient = voiceClients[guildId];
+
+        if (!voiceClient) {
+            await interaction.reply({ content: "現在、ボイスチャンネルに接続していません。", flags: MessageFlags.Ephemeral });
+            return;
         }
 
-        const member = interaction.member as GuildMember;
-        if (!member.voice.channel) {
-            return interaction.reply('まず、ボイスチャンネルに参加してください。');
+        try {
+            await voiceClient.disconnect();
+            delete voiceClients[guildId];
+            await interaction.reply("ボイスチャンネルから切断しました。");
+        } catch (error) {
+            console.error(error);
+            await interaction.reply({ content: "ボイスチャンネルからの切断に失敗しました。", flags: MessageFlags.Ephemeral });
         }
-
-        const connection = getVoiceConnection(interaction.guild.id);
-        if (!connection) {
-            return interaction.reply('現在、ボイスチャンネルに接続していません。');
-        }
-
-        connection.destroy();
-        return interaction.reply('ボイスチャンネルから切断しました。');
     }
-};
-
-export default stopCommand;
+    }
