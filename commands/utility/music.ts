@@ -129,7 +129,7 @@ module.exports = {
                             return interaction.editReply({ embeds: [embed] });
                         }
                         case "loopqueue": {
-                            if (queue.repeatMode === 2) {
+                            if (queue.repeatMode === 1) {
                                 client.distube.setRepeatMode(interaction, 0);
                                 embed.setColor("Blue").setDescription(`🔂 **トラックはループされていません:** \`キュー\``);
                             } else {
@@ -139,12 +139,12 @@ module.exports = {
                             return interaction.editReply({ embeds: [embed] });
                         }
                         case "loopall": {
-                            if (queue.repeatMode === 0) {
-                                client.distube.setRepeatMode(interaction, 2);
-                                embed.setColor("Blue").setDescription(`🔁 **トラックはループされています:** \`全て\``);
-                            } else {
+                            if (queue.repeatMode === 2) {
                                 client.distube.setRepeatMode(interaction, 0);
                                 embed.setColor("Blue").setDescription(`🔁 **トラックはループされていません:** \`全て\``);
+                            } else {
+                                client.distube.setRepeatMode(interaction, 2);
+                                embed.setColor("Blue").setDescription(`🔁 **トラックはループされています:** \`全て\``);
                             }
                             return interaction.editReply({ embeds: [embed] });
                         }
