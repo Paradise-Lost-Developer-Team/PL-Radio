@@ -227,12 +227,12 @@ client.on(Events.GuildCreate, async guild => {
     const termsButton = new ButtonBuilder()
         .setLabel('利用規約')
         .setStyle(ButtonStyle.Link)
-        .setURL('https://example.com/terms'); // 実際の利用規約ページのURLに変更してください
+        .setURL('https://paradise-lost-developer-team.github.io/PL-Radio/Term-of-Service/'); 
 
     const privacyButton = new ButtonBuilder()
         .setLabel('プライバシーポリシー')
         .setStyle(ButtonStyle.Link)
-        .setURL('https://example.com/privacy'); // 実際のプライバシーポリシーページのURLに変更してください
+        .setURL('https://paradise-lost-developer-team.github.io/PL-Radio/Privacy-Policy/'); 
 
     const row = new ActionRowBuilder<ButtonBuilder>()
         .addComponents(termsButton, privacyButton);
