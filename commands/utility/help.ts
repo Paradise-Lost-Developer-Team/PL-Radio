@@ -15,54 +15,28 @@ class HelpMenu {
                     { name: "/help", value: "このヘルプメニューを表示します。" }
                 )
                 .setColor(0x3498db)
-                .setFooter({ text: "ページ 1/5" }),
+                .setFooter({ text: "ページ 1/3" }),
             new EmbedBuilder()
-                .setTitle("PL-Radio - 音楽コマンド (再生)")
-                .setDescription("音楽再生に関する基本的なサブコマンドです。")
+                .setTitle("PL-Radio - 音楽コマンド")
+                .setDescription("音楽再生に関するコマンドです。")
                 .addFields(
                     { name: "/music play", value: "音楽を再生します。URLまたは検索ワードを指定できます。" },
-                    { name: "/music pause", value: "再生中の音楽を一時停止します。" },
-                    { name: "/music resume", value: "一時停止中の音楽を再開します。" },
-                    { name: "/music stop", value: "再生を停止し、キューをクリアします。" },
-                    { name: "/music skip", value: "現在再生中の曲をスキップします。" }
+                    { name: "/music option", value: "音楽プレーヤーのオプションを設定します。リストから選択肢を選んで操作できます。(一時停止、再開、スキップ、ループモードなど)" },
+                    { name: "/music volume", value: "音量を調整します (0-100)。" }
                 )
                 .setColor(0x1DB954)
-                .setFooter({ text: "ページ 2/5" }),
-            new EmbedBuilder()
-                .setTitle("PL-Radio - 音楽コマンド (キュー)")
-                .setDescription("再生キューを管理するサブコマンドです。")
-                .addFields(
-                    { name: "/music queue", value: "現在のキューを表示します。" },
-                    { name: "/music clear", value: "キューをクリアします。" },
-                    { name: "/music shuffle", value: "キュー内の曲をシャッフルします。" },
-                    { name: "/music remove", value: "キューから特定の曲を削除します。" },
-                    { name: "/music move", value: "キュー内の曲の位置を移動します。" }
-                )
-                .setColor(0xE91E63)
-                .setFooter({ text: "ページ 3/5" }),
-            new EmbedBuilder()
-                .setTitle("PL-Radio - 音楽コマンド (設定)")
-                .setDescription("音声設定に関するサブコマンドです。")
-                .addFields(
-                    { name: "/music volume", value: "音量を調整します (0-100)。" },
-                    { name: "/music speed", value: "再生速度を調整します (0.5-2.0)。" },
-                    { name: "/music seek", value: "再生位置を変更します。" },
-                    { name: "/music loop", value: "ループモードを設定します（無効/1曲/全曲）。" },
-                    { name: "/music nowplaying", value: "現在再生中の曲の詳細情報を表示します。" }
-                )
-                .setColor(0x9B59B6)
-                .setFooter({ text: "ページ 4/5" }),
+                .setFooter({ text: "ページ 2/3" }),
             new EmbedBuilder()
                 .setTitle("PL-Radio - 追加情報")
                 .setDescription("使用上のヒントと追加情報です。")
                 .addFields(
                     { name: "musicコマンド活用法", value: "`/music play` は YouTube、Spotify、SoundCloudなど様々なソースから再生できます。" },
+                    { name: "optionコマンドの使い方", value: "`/music option` ではドロップダウンメニューから操作を選択できます。曲のスキップ、一時停止、再開、ループ設定などが可能です。" },
                     { name: "filterコマンド", value: "`/filter` ではbassboost、nightcore、vaporwaveなどの様々な音響効果を適用できます。" },
-                    { name: "不具合の報告", value: "何か問題がありましたら、開発者へのPRまたはIssueでご連絡ください。" },
-                    { name: "今後の更新", value: "今後のアップデートでさらに多くの機能が追加される予定です。" }
+                    { name: "不具合の報告", value: "何か問題がありましたら、開発者へのPRまたはIssueでご連絡ください。" }
                 )
                 .setColor(0x34495E)
-                .setFooter({ text: "ページ 5/5" })
+                .setFooter({ text: "ページ 3/3" })
         ];
         this.currentPage = 0;
     }
