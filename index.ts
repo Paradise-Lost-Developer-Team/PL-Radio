@@ -1,4 +1,4 @@
-import { Client, Events, GatewayIntentBits, ActivityType, MessageFlags, Collection, EmbedBuilder, TextChannel, ChatInputApplicationCommandData, ChatInputCommandInteraction, GuildTextBasedChannel } from "discord.js";
+import { Client, Events, GatewayIntentBits, ActivityType, MessageFlags, Collection, EmbedBuilder, TextChannel, ChatInputApplicationCommandData, ChatInputCommandInteraction, GuildTextBasedChannel, ButtonBuilder, ActionRowBuilder, ButtonStyle } from "discord.js";
 import { deployCommands } from "./utils/deploy-commands";
 import { Player } from "discord-player";
 import { REST } from "@discordjs/rest";
@@ -200,6 +200,51 @@ client.on(Events.InteractionCreate, async interaction => {
             }
         }
     }
+});
+
+// サーバー参加時のウェルカムメッセージイベントを追加
+client.on(Events.GuildCreate, async guild => {
+    // 送信可能な最初のテキストチャンネルを探す
+    const targetChannel = guild.channels.cache.find(
+        channel => channel.isTextBased() && channel.permissionsFor(guild.members.me!)?.has('SendMessages')
+    ) as TextChannel;
+
+    if (!targetChannel) return; // 送信可能なチャンネルがない場合は何もしない
+
+    // ウェルカムメッセージ用の埋め込みを作成
+    const welcomeEmbed = new EmbedBuilder()
+        .setColor('#a200ff')
+        .setTitle('PL-Radioをご利用いただきありがとうございます！')
+        .setDescription('音楽再生Botとして、様々な音楽プラットフォームから音楽を再生することができます。')
+        .addFields(
+            { name: '🎵 基本的な使い方', value: '`/play [曲名/URL]` コマンドで音楽を再生できます。' },
+            { name: '📋 その他のコマンド', value: '`/help` コマンドで全コマンドリストを確認できます。' }
+        )
+        .setFooter({ text: 'サポートが必要な場合は、開発者にお問い合わせください。' })
+        .setTimestamp();
+
+    // 利用規約とプライバシーポリシーのリンクボタンを作成
+    const termsButton = new ButtonBuilder()
+        .setLabel('利用規約')
+        .setStyle(ButtonStyle.Link)
+        .setURL('https://example.com/terms'); // 実際の利用規約ページのURLに変更してください
+
+    const privacyButton = new ButtonBuilder()
+        .setLabel('プライバシーポリシー')
+        .setStyle(ButtonStyle.Link)
+        .setURL('https://example.com/privacy'); // 実際のプライバシーポリシーページのURLに変更してください
+
+    const row = new ActionRowBuilder<ButtonBuilder>()
+        .addComponents(termsButton, privacyButton);
+
+    // 埋め込みメッセージとボタンを送信
+    await targetChannel.send({ 
+        embeds: [welcomeEmbed],
+        components: [row]
+    });
+    
+    // サーバーステータスの初期化
+    new ServerStatus(guild.id);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
