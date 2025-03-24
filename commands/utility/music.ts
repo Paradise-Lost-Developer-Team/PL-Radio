@@ -81,7 +81,19 @@ module.exports = {
             switch (subcommand) {
                 case "play": {
                     try {
-                        await client.distube.play(voiceChannel, query, { textChannel: interaction.channel, member: member });
+                        // ボイスチャンネルにスピーカーミュート状態で接続する
+                        if (voiceChannel && !client.distube.voices.get(guild)) {
+                            client.distube.voices.join(voiceChannel)
+                                .then(connection => {
+                                    // discord.jsのVoiceConnectionオブジェクトを通じてスピーカーミュートを設定
+                                    connection.setSelfDeaf(true);
+                                });
+                        }
+                        
+                        await client.distube.play(voiceChannel, query, { 
+                            textChannel: interaction.channel, 
+                            member: member,
+                        });
                         return interaction.editReply({ content: 'リクエストはキューに追加されました。' });
                     } catch (error) {
                         console.error(error);
