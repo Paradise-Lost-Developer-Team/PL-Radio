@@ -134,3 +134,4 @@ config.json
 guild_id.txt
 package.json
 package-lock.json
+/.vscode
