@@ -85,6 +85,16 @@ module.exports = {
                         return interaction.editReply({ content: 'リクエストはキューに追加されました。' });
                     } catch (error) {
                         console.error(error);
+                        
+                        // YouTube Music Premium エラーのハンドリング
+                        if (error instanceof Error && error.message.includes("Music Premium members")) {
+                            embed.setColor("Red")
+                                .setTitle("再生エラー")
+                                .setDescription("この曲はYouTube Music Premiumメンバーのみが利用できるため再生できません。\n別の曲または別のプラットフォーム（Spotify、SoundCloudなど）からの曲をお試しください。");
+                            return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                        }
+                        
+                        // その他のエラー
                         embed.setColor("Red").setDescription("曲再生中に接続エラーが発生しました。");
                         return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                     }
