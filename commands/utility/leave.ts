@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction, MessageFlags } from 'discord.js';
-import { voiceClients } from '../../utils/TTS-Engine'; // Adjust the path as necessary
+import { getVoiceConnection } from '@discordjs/voice';
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -8,20 +8,19 @@ module.exports = {
         .setDescription('BOTをチャンネルから退出します'),
     async execute(interaction: CommandInteraction) {
         const guildId = interaction.guildId!;
-        const voiceClient = voiceClients[guildId];
+        const connection = getVoiceConnection(guildId);
 
-        if (!voiceClient) {
+        if (!connection) {
             await interaction.reply({ content: "現在、ボイスチャンネルに接続していません。", flags: MessageFlags.Ephemeral });
             return;
         }
 
         try {
-            await voiceClient.disconnect();
-            delete voiceClients[guildId];
+            connection.disconnect();
             await interaction.reply("ボイスチャンネルから切断しました。");
         } catch (error) {
             console.error(error);
             await interaction.reply({ content: "ボイスチャンネルからの切断に失敗しました。", flags: MessageFlags.Ephemeral });
         }
     }
-    }
+}
