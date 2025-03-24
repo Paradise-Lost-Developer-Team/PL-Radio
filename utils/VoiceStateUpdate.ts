@@ -6,6 +6,7 @@ export function VoiceStateUpdate(client: ExtendedClient) {
     client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
         // ボットの移動は無視する（ボットの状態変更に反応して退室させないため）
         if (oldState.member?.user.bot || newState.member?.user.bot) return;
+        const distube = client.distube;
         
         // 少し待ってから最新状態を取得
         setTimeout(async () => {
@@ -26,7 +27,7 @@ export function VoiceStateUpdate(client: ExtendedClient) {
             if (nonBotCount === 0) {
                 if (voiceConnection.state.status === VoiceConnectionStatus.Ready) {
                     console.log(`Guild ${guildId}: ボットのみ残っているため退室します。`);
-                    voiceConnection.disconnect();
+                    distube.voices.leave(guildId);
                 }
             }
         }, 3000); // 3秒待機に延長（状態更新が完全に反映される時間を確保）
