@@ -1,7 +1,6 @@
 import { Events } from 'discord.js';
-import { VoiceConnection, VoiceConnectionStatus } from '@discordjs/voice';
+import { VoiceConnectionStatus, getVoiceConnection } from '@discordjs/voice';
 import { ExtendedClient } from '../index';
-import { voiceClients } from './TTS-Engine';
 
 export function VoiceStateUpdate(client: ExtendedClient) {
     client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
@@ -13,26 +12,21 @@ export function VoiceStateUpdate(client: ExtendedClient) {
             // ギルドIDを取得
             const guildId = oldState.guild.id;
             
-            // このギルドにボットが接続していなければ何もしない
-            if (!voiceClients[guildId]) return;
+            // このギルドにボットが接続しているか確認
+            const voiceConnection = getVoiceConnection(guildId);
+            if (!voiceConnection) return;
             
             // ボットが接続しているチャンネルを取得
             const botChannel = oldState.guild.members.me?.voice.channel;
-            if (!botChannel) {
-                // ボットがボイスチャンネルに接続していない場合は管理データも削除
-                delete voiceClients[guildId];
-                return;
-            }
+            if (!botChannel) return;
             
             // ボットのいるチャンネル内の非Botメンバー数をカウント
             const nonBotCount = botChannel.members.filter(member => !member.user.bot).size;
             
             if (nonBotCount === 0) {
-                const voiceClient = voiceClients[guildId];
-                if (voiceClient && voiceClient.state.status === VoiceConnectionStatus.Ready) {
+                if (voiceConnection.state.status === VoiceConnectionStatus.Ready) {
                     console.log(`Guild ${guildId}: ボットのみ残っているため退室します。`);
-                    voiceClient.disconnect();
-                    delete voiceClients[guildId];
+                    voiceConnection.disconnect();
                 }
             }
         }, 3000); // 3秒待機に延長（状態更新が完全に反映される時間を確保）
