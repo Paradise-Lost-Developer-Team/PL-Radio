@@ -8,11 +8,12 @@ import { DisTube, Queue, Song, Playlist } from "distube";
 import type { Awaitable, DisTubeEvents } from "distube";
 import { SpotifyPlugin } from "@distube/spotify";
 import { SoundCloudPlugin } from "@distube/soundcloud";
-import { YouTubePlugin } from "@distube/youtube";
+// YouTubePluginは使用しない
+// import { YouTubePlugin } from "@distube/youtube";
 import { DeezerPlugin } from "@distube/deezer";
-import { DirectLinkPlugin } from "@distube/direct-link";
-import { FilePlugin } from "@distube/file";
 import { VoiceStateUpdate } from "./utils/VoiceStateUpdate";
+// play-dlを使用
+import * as playDl from 'play-dl';
 
 export const followup = async (interaction: ChatInputCommandInteraction, embed: EmbedBuilder, textChannel: GuildTextBasedChannel): Promise<Awaitable<any>> => {
     if (Date.now() - interaction.createdTimestamp < 15 * 60 * 1000) {
@@ -32,22 +33,15 @@ class DisTubeClient extends Client<true> {
     distube: DisTube;
     constructor(options: any) {
         super(options);
-        // 修正: グローバル変数 client ではなく this を渡す
+        // 修正: YouTubePluginを削除し、代わりにplay-dlを使うように設定
         this.distube = new DisTube(this, {
             plugins: [
                 new SpotifyPlugin(),
                 new SoundCloudPlugin(),
-                new YouTubePlugin(),
-                new DeezerPlugin(),
-                new DirectLinkPlugin(),
-                new FilePlugin(),
+                // YouTubePluginを削除
+                new DeezerPlugin()
             ],
-            emitAddListWhenCreatingQueue: true,
-            emitAddSongWhenCreatingQueue: true,
-            emitNewSongOnly: true,
-            savePreviousSongs: true,
-            nsfw: true,
-            joinNewVoiceChannel: true,
+            // DisTubeのストリーミング機能にplay-dlを使用
             customFilters: {
                 "8D": "apulsator=hz=0.08",
                 "gate": "agate",
@@ -67,7 +61,52 @@ class DisTubeClient extends Client<true> {
                 "karaoke": "stereotools=mlev=0.03",
                 "mcompand": "mcompand"
             },
+            // @ts-ignore: 'searchEngine' does not exist in type 'DisTubeOptions'
+            searchEngine: async (query: string) => {
+                const playDlResults = await playDl.search(query, { limit: 1 });
+                if (!playDlResults || playDlResults.length === 0) return [];
+                
+                const result = playDlResults[0];
+                return [{
+                    name: result.title || 'Unknown',
+                    url: result.url,
+                    duration: result.durationInSec
+                }];
+            },
         });
+        
+        // play-dlを使用するようにDisTubeに設定
+        (this.distube as any).extractorPlugin = {
+            validate: (url: string) => {
+                return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/.test(url);
+            },
+            resolve: async (url: string) => {
+                try {
+                    const info = await playDl.video_info(url);
+                    if (!info) return null;
+                    
+                    return {
+                        id: info.video_details.id,
+                        title: info.video_details.title || 'Unknown',
+                        duration: info.video_details.durationInSec,
+                        thumbnail: info.video_details.thumbnails[0]?.url,
+                        url: info.video_details.url
+                    };
+                } catch (err) {
+                    console.error('YouTube解決エラー:', err);
+                    return null;
+                }
+            },
+            getStreamByInfo: async (info: any) => {
+                try {
+                    const stream = await playDl.stream(info.url, { discordPlayerCompatibility: true });
+                    return { stream: stream.stream, type: stream.type };
+                } catch (err) {
+                    console.error('YouTubeストリームエラー:', err);
+                    throw err;
+                }
+            }
+        };
     }
 }
 
