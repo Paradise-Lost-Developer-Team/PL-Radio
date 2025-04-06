@@ -61,18 +61,6 @@ class DisTubeClient extends Client<true> {
                 "karaoke": "stereotools=mlev=0.03",
                 "mcompand": "mcompand"
             },
-            // @ts-ignore: 'searchEngine' does not exist in type 'DisTubeOptions'
-            searchEngine: async (query: string) => {
-                const playDlResults = await playDl.search(query, { limit: 1 });
-                if (!playDlResults || playDlResults.length === 0) return [];
-                
-                const result = playDlResults[0];
-                return [{
-                    name: result.title || 'Unknown',
-                    url: result.url,
-                    duration: result.durationInSec
-                }];
-            },
         });
         
         // play-dlを使用するようにDisTubeに設定
